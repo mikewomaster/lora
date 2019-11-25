@@ -8,6 +8,55 @@
 #include "mainwindow.h"
 #include "mbusdeviceset.h"
 
+#ifdef STORE
+static MbusSet s_mbusset;
+#endif
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    ui->pushButton_3->setEnabled(false);
+
+    if (ui->mbusPrimaryAddressEdit_11->text() != "") {
+        emit on_mbusPrimaryWrite_11_clicked();
+        _sleep(3000);
+    }
+
+    if (ui->mbusSecondaryEdit->text() != "") {
+        emit on_mbusSecondaryWrite_clicked();
+        _sleep(3000);
+    }
+
+    if (ui->mbusReadOutEdit->text() != "") {
+        emit on_mbusReadoutWrite_clicked();
+        _sleep(3000);
+    }
+
+    emit on_mbusTSWrite_clicked();
+    _sleep(3000);
+
+    ui->pushButton_3->setEnabled(true);
+}
+
+
+void MainWindow::on_mbusSetReload_clicked()
+{
+    ui->mbusSetReload->setEnabled(false);
+
+    emit on_mbusPrimaryRead_12_clicked();
+    _sleep(3000);
+
+    emit on_mbusSecondaryRead_clicked();
+    _sleep(3000);
+
+    emit on_mbusReadoutRead_clicked();
+    _sleep(3000);
+
+    emit on_mbusTSRead_clicked();
+    _sleep(3000);
+
+    ui->mbusSetReload->setEnabled(true);
+}
+
 void MainWindow::mbusPrimaryReadReady()
 {
     auto reply = qobject_cast<QModbusReply *>(sender());
@@ -58,7 +107,7 @@ void MainWindow::on_mbusPrimaryRead_12_clicked()
 
 void MainWindow::on_mbusPrimaryWrite_11_clicked()
 {
-    if (!modbusDevice)
+     if (!modbusDevice)
         return;
     statusBar()->clearMessage();
 
@@ -67,6 +116,14 @@ void MainWindow::on_mbusPrimaryWrite_11_clicked()
 
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, mbusPrimaryAddressEntries);
     quint16 unitOne = ((ui->mbusPrimaryAddressEdit_11->text().toInt()) << 8) + ui->mbusDeviceMode_11->currentIndex();
+
+    #ifdef STORE
+    if (s_mbusset.s_primary == unitOne){
+        return;
+    }
+    s_mbusset.s_primary = unitOne;
+    #endif
+
     writeUnit.setValue(0, unitOne);
 
     writeSingleHoldingRegister(writeUnit);
@@ -90,6 +147,16 @@ void MainWindow::on_mbusSecondaryWrite_clicked()
     if (!modbusDevice)
         return;
     statusBar()->clearMessage();
+
+#ifdef STORE
+    // store value
+    if (s_mbusset.s_secondary == values) {
+        return;
+    }
+    QVector<quint16> temp(values);
+    s_mbusset.s_secondary.swap(temp);
+    values.swap(s_mbusset.s_secondary);
+#endif
 
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, multiplyTerm * 20 + mbusSecondaaryAddressBase, mbusSecondarAddressEntries);
     writeUnit.setValues(values);

@@ -1,7 +1,8 @@
 /* === Shared === */
 QStackedWidget, QLabel, QPushButton, QRadioButton, QCheckBox,
 QGroupBox, QStatusBar, QToolButton, QComboBox, QDialog, QWidget {
-    background-color: #222222;
+    /*background-color: #222222;*/
+    background-color: #4169E1;
     color: #BBBBBB;
     font-family: "Arial";
     font-size: 16px;

@@ -53,9 +53,9 @@ void MainWindow::on_pushButton_6_clicked()
     ba[3] = ui->mbusReqEdit->text().toInt(); // address number
     int ret = m_serial->write(ba);
     if (ret == 4) {
-        QMessageBox::information(this, tr("OK"), "write cmd ok");
+        QMessageBox::information(this, tr("OK"), "Scan One Meter to Obtain Data. Done");
     }else {
-        QMessageBox::information(this, tr("fail"), "write fail");
+        QMessageBox::information(this, tr("fail"), "Scan One Meter to Obtain Data. Failed");
     }
     _sleep(100);
 

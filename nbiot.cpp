@@ -74,7 +74,11 @@ void MainWindow::nb_handle_read_ready(QLineEdit *le)
         const QModbusDataUnit unit = reply->result();
         QString s;
         for (uint i = 0; i < unit.valueCount(); i++) {
+            if ((unit.value(i) >> 8) == 0x00)
+                break;
             s[2*i] = unit.value(i) >> 8;
+            if ((unit.value(i) & 0x00ff) == 0x00)
+                break;
             s[(2*i) +1] = unit.value(i) & 0x00ff;
         }
         le->setText(s);
@@ -168,4 +172,44 @@ void MainWindow::ipReadReady()
 void MainWindow::on_ipRead_clicked()
 {
     handle_read(NBIPAddress, NBIPEntries, &ipReadReady);
+}
+
+void MainWindow::on_nbApply_clicked()
+{
+    ui->nbApply->setEnabled(false);
+    if (ui->apnLineEdit->text() != ""){
+        emit on_apnWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->userLineEdit->text() != ""){
+        emit on_userWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->passwordLineEdit->text() != ""){
+        emit on_passwordWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->ipLineEdit->text() != ""){
+        emit on_ipWrite_clicked();
+        _sleep(2000);
+    }
+    ui->nbApply->setEnabled(true);
+}
+
+void MainWindow::on_nbReload_clicked()
+{
+    ui->nbReload->setEnabled(false);
+    emit on_apnRead_clicked();
+    _sleep(2000);
+    emit on_userRead_clicked();
+    _sleep(2000);
+    emit on_passwordRead_clicked();
+    _sleep(2000);
+    emit on_ipRead_clicked();
+    _sleep(2000);
+    emit on_nbStatusRead_clicked();
+    ui->nbReload->setEnabled(true);
 }

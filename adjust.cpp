@@ -19,6 +19,40 @@ void MainWindow::handle_write(QLineEdit* l, quint16 add)
     writeSingleHoldingRegister(writeUnit);
 }
 
+void MainWindow::nbStatusFill(short res, QLineEdit *le)
+{
+   switch(res)
+   {
+    case -1:
+      le->setText("CEL_ERROR");
+      break;
+   case 0:
+      le->setText("CEL_NOT_READY");
+      break;
+   case 1:
+      le->setText("CEL_PORT_READY");
+      break;
+   case 2:
+      le->setText("CEL_MODULE_READY");
+      break;
+   case 3:
+      le->setText("CEL_SIM_NOT_READY");
+      break;
+   case 4:
+      le->setText("CEL_PIN_REQUEST");
+      break;
+   case 5:
+      le->setText("CEL_SIM_READY");
+      break;
+   case 6:
+      le->setText("CEL_DISCONNECTED");
+      break;
+   case 7:
+      le->setText("CEL_CONNECTED");
+      break;
+   }
+}
+
 void MainWindow::handle_read_ready(QLineEdit* le)
 {
     auto reply = qobject_cast<QModbusReply *>(sender());
@@ -28,7 +62,11 @@ void MainWindow::handle_read_ready(QLineEdit* le)
     if (reply->error() == QModbusDevice::NoError) {
         const QModbusDataUnit unit = reply->result();
         short entry = unit.value(0);
-        le->setText(QString::number(entry));
+        if (le == ui->nbStatusLineEdit) {
+            nbStatusFill(entry, ui->nbStatusLineEdit);
+        }else{
+            le->setText(QString::number(entry));
+        }
         statusBar()->showMessage(tr("OK!"));
     } else if (reply->error() == QModbusDevice::ProtocolError) {
         statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").

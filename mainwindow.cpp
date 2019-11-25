@@ -52,6 +52,7 @@
 #include "ui_mainwindow.h"
 #include "settingsdialog.h"
 #include "logdialog.h"
+#include "system.h"
 #include "writeregistermodel.h"
 
 #include <QModbusTcpClient>
@@ -81,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_settingsDialog = new SettingsDialog(this);
     m_logdialog = new logdialog(this);
+    m_system = new systemDialog(this);
     initActions();
 
     writeModel = new WriteRegisterModel(this);
@@ -97,21 +99,61 @@ MainWindow::MainWindow(QWidget *parent)
     m_Model->setHorizontalHeaderItem(3, new QStandardItem(QObject::tr("Manu")));
     m_Model->setHorizontalHeaderItem(4, new QStandardItem(QObject::tr("Version")));
     m_Model->setHorizontalHeaderItem(5, new QStandardItem(QObject::tr("Medium")));
-    m_Model->setHorizontalHeaderItem(6, new QStandardItem(QObject::tr("Type")));
+    // m_Model->setHorizontalHeaderItem(6, new QStandardItem(QObject::tr("Type")));
+    m_Model->setHorizontalHeaderItem(6, new QStandardItem(QObject::tr("Value")));
     m_Model->setHorizontalHeaderItem(7, new QStandardItem(QObject::tr("Unit")));
-    m_Model->setHorizontalHeaderItem(8, new QStandardItem(QObject::tr("Scale")));
-    m_Model->setHorizontalHeaderItem(9, new QStandardItem(QObject::tr("Value")));
-    m_Model->setHorizontalHeaderItem(10, new QStandardItem(QObject::tr("TimeStamp")));
-    m_Model->setHorizontalHeaderItem(11, new QStandardItem(QObject::tr("Description")));
+    // m_Model->setHorizontalHeaderItem(8, new QStandardItem(QObject::tr("Scale")));
+    m_Model->setHorizontalHeaderItem(8, new QStandardItem(QObject::tr("Description")));
+    m_Model->setHorizontalHeaderItem(9, new QStandardItem(QObject::tr("TimeStamp")));
 
     ui->connectType->hide();
     ui->serverEdit->hide();
     ui->syncWordLineEdit->hide();
     ui->OptimizeLowRateComboBox->hide();
     ui->tabWidget_2->show();
+    ui->tabWidget_2->setTabEnabled(5, false);
+    ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
     ui->tabWidget->hide();
     ui->groupBox_6->hide();
     ui->groupBox_11->hide();
+    ui->groupBox_13->hide();
+    ui->mbusRegister->hide();
+    ui->mbusPrimaryEdit->setText("1");
+    ui->mbusPrimaryEdit->hide();
+
+    // hide button
+    ui->mbusPrimaryRead_12->hide();
+    ui->mbusPrimaryWrite_11->hide();
+    ui->mbusSecondaryRead->hide();
+    ui->mbusSecondaryWrite->hide();
+    ui->mbusReadoutRead->hide();
+    ui->mbusReadoutWrite->hide();
+    ui->mbusTSRead->hide();
+    ui->mbusTSWrite->hide();
+
+    ui->apnRead->hide();
+    ui->apnWrite->hide();
+    ui->userRead->hide();
+    ui->userWrite->hide();
+    ui->passwordRead->hide();
+    ui->passwordWrite->hide();
+    ui->nbStatusRead->hide();
+    ui->nbStatusWrite->hide();
+    ui->ipRead->hide();
+    ui->ipWrite->hide();
+
+    ui->srvRead->hide();
+    ui->srvWrite->hide();
+    ui->portRead->hide();
+    ui->portWrite->hide();
+    ui->topicRead->hide();
+    ui->topicWrite->hide();
+    ui->idRead->hide();
+    ui->idWrite->hide();
+    ui->intervalRead->hide();
+    ui->idWrite_2->hide();
+    ui->mqttStatusRead->hide();
+    ui->pidButtonWrite_8->hide();
 
 #ifdef TEST_DATA
     QList<QStandardItem *> item;
@@ -126,8 +168,8 @@ MainWindow::MainWindow(QWidget *parent)
     item.append(new QStandardItem(QObject::tr("0.001")));
     item.append(new QStandardItem(QObject::tr("99.6")));
     item.append(new QStandardItem(QObject::tr("HMS Heat")));
+    m_Model->appendRow(item);
     item.clear();
-
 
     item.append(new QStandardItem(QObject::tr("2")));
     item.append(new QStandardItem(QObject::tr("primary")));
@@ -145,6 +187,17 @@ MainWindow::MainWindow(QWidget *parent)
 #endif
 
     ui->tableView->setModel(m_Model);
+
+    // resize
+#if 0
+    QWidget *widgetAdjust = new QWidget(this);
+    setCentralWidget(widgetAdjust);
+    QVBoxLayout *windowLayoutAdjust = new QVBoxLayout;
+    windowLayoutAdjust->addLayout(ui->gridLayout, 1);
+    windowLayoutAdjust->addWidget(ui->tabWidget_2);
+    widgetAdjust->setLayout(windowLayoutAdjust);
+#endif
+    //
 }
 
 MainWindow::~MainWindow()
@@ -163,14 +216,15 @@ void MainWindow::initActions()
     ui->actionExit->setEnabled(true);
     ui->actionOptions->setEnabled(true);
 
-    connect(ui->actionConnect, &QAction::triggered,
-            this, &MainWindow::on_connectButton_clicked);
-    connect(ui->actionDisconnect, &QAction::triggered,
-            this, &MainWindow::on_connectButton_clicked);
-
+    connect(ui->actionConnect, &QAction::triggered,this, &MainWindow::on_connectButton_clicked);
+    connect(ui->actionDisconnect, &QAction::triggered,this, &MainWindow::on_connectButton_clicked);
     connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
     connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
     connect(ui->actionLog, &QAction::triggered, m_logdialog, &QDialog::show);
+
+    ui->action_Settings->setEnabled(true);
+    connect(ui->action_Settings, &QAction::triggered, m_system, &QDialog::show);
+
 }
 
 void MainWindow::findComPort()

@@ -6,6 +6,7 @@
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
 #include "mqtt.h"
+#include "commanhelper.h"
 
 //srv ip
 void MainWindow::on_srvWrite_clicked()
@@ -179,4 +180,56 @@ void MainWindow::on_idWrite_2_clicked()
     } else {
         statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
     }
+}
+
+
+void MainWindow::on_mqttApply_clicked()
+{
+    ui->mqttApply->setEnabled(false);
+
+    if (ui->srvLineEdit->text() != ""){
+        emit on_srvWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->portLineEdit->text() != ""){
+        emit on_portWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->topicLineEdit->text() != ""){
+        emit on_topicWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->idLineEdit->text() != ""){
+        emit on_idWrite_clicked();
+        _sleep(2000);
+    }
+
+    if (ui->intervalLineEdit->text() != ""){
+        emit on_idWrite_2_clicked();
+        _sleep(2000);
+    }
+
+    ui->mqttApply->setEnabled(true);
+}
+
+void MainWindow::on_mqttReload_clicked()
+{
+    ui->mqttReload->setEnabled(false);
+
+    on_srvRead_clicked();
+    _sleep(2000);
+    on_portRead_clicked();
+    _sleep(2000);
+    on_topicRead_clicked();
+    _sleep(2000);
+    on_idRead_clicked();
+    _sleep(2000);
+    on_intervalRead_clicked();
+    _sleep(2000);
+    on_mqttStatusRead_clicked();
+
+    ui->mqttReload->setEnabled(true);
 }

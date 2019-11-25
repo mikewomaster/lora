@@ -60,7 +60,11 @@
 
 // MACRO CRONTROL Area
 // #define TEST_DATA
-#define SKIN
+// #define SKIN
+// #define LOGIN
+// #define STORE
+#define ADMIN
+
 QT_BEGIN_NAMESPACE
 
 class QModbusClient;
@@ -70,12 +74,14 @@ namespace Ui {
 class MainWindow;
 class SettingsDialog;
 class logdialog;
+class systemDialog;
 }
 
 QT_END_NAMESPACE
 
 class SettingsDialog;
 class logdialog;
+class systemDialog;
 class WriteRegisterModel;
 
 #define LoraModbusStartAddr 21
@@ -121,7 +127,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    QModbusClient *getModbusDevice()
+    {
+       return modbusDevice;
+    }
 private:
     void initActions();
     QModbusDataUnit readRequest() const;
@@ -136,7 +145,7 @@ private:
     void handle_read_ready(QLineEdit* );
     void nb_handle_write(QLineEdit*, int, int);
     void nb_handle_read_ready(QLineEdit* );
-
+    void nbStatusFill(short, QLineEdit*);
 private slots:
     void on_connectButton_clicked();
     void onStateChanged(int state);
@@ -195,150 +204,116 @@ private slots:
     void on_abpAppsKeyWrite_clicked();
     void on_abpAppsKeyRead_clicked();
     void abpAppsKeyReadReady();
-
     void on_abpNwksKeyWrite_clicked();
     void on_abpNwksKeyRead_clicked();
     void abpNwksKeyReadReady();
-
     void on_otaaDevEuiWrite_clicked();
     void on_otaaDevEuiRead_clicked();
     void otaaDevEuiReadReady();
-
     void on_otaaAppEuiWrite_clicked();
     void on_otaaAppEuiRead_clicked();
     void otaaAppEuiReadReady();
-
     void on_otaaAppKeyWrite_clicked();
     void on_otaaAppKeyRead_clicked();
     void otaaAppKeyReadReady();
-
     void on_clearViewBtn_clicked();
-
     void on_mbusPrimaryRead_12_clicked();
-
     void on_mbusPrimaryWrite_11_clicked();
-
     void mbusPrimaryReadReady();
-
     void on_mbusSecondaryWrite_clicked();
-
     void on_mbusSecondaryRead_clicked();
-
     void mbusSecReadReady();
-
     void mbusReadoutReadReady();
     void on_mbusReadoutWrite_clicked();
-
     void on_mbusReadoutRead_clicked();
-
     void mbusTimeStampReadReady();
     void on_mbusTSWrite_clicked();
-
     void on_mbusTSRead_clicked();
-
     void mbusReadDeviceReadReady();
     void mbusReadValueReadReady();
     void on_mbusPrimaryRead_clicked();
-
-    // mbus cmd tab button
     void on_pushButton_6_clicked();
     void on_pushButton_11_clicked();
     void on_pushButton_7_clicked();
     void mbusCheckResultReady();
-
     void apnReadReady();
     void on_apnRead_clicked();
     void on_apnWrite_clicked();
-
     void on_SNPushButton_clicked();
     void SNReadReady();
     void on_vinWrite_clicked();
-
     void on_vinRead_clicked();
     void vinRefReadReady();
     void on_voutWrite_clicked();
-
     void on_voutRead_clicked();
     void voutRefReadReady();
     void on_iinWrite_clicked();
-
     void on_iinRead_clicked();
     void iinRefReadReady();
-
     void on_ioutRead_clicked();
     void ioutReadReady();
     void on_ioutWrite_clicked();
-
     void on_factor1Write_clicked();
-
     void on_factor1Read_clicked();
     void factor1ReadReady();
     void on_factor2Write_clicked();
-
     void on_factor2Read_clicked();
     void factor2ReadReady();
     void on_factor3Write_clicked();
-
     void on_factor3Read_clicked();
     void factor3ReadReady();
     void on_factor4Write_clicked();
-
     void on_factor4Read_clicked();
     void factor4ReadReady();
     void on_factor5Write_clicked();
-
     void on_factor5Read_clicked();
     void factor5ReadReady();
     void on_factor6Write_clicked();
-
     void on_factor6Read_clicked();
     void factor6ReadReady();
-
     void userReadReady();
     void on_userRead_clicked();
     void on_userWrite_clicked();
-
     void on_passwordWrite_clicked();
     void passwordReadReady();
     void on_passwordRead_clicked();
-
     void on_ipWrite_clicked();
     void ipReadReady();
     void on_ipRead_clicked();
-
     void on_nbStatusWrite_clicked();
     void statusReadReady();
     void on_nbStatusRead_clicked();
-
     void on_srvWrite_clicked();
     void srvReadReady();
     void on_srvRead_clicked();
-
     void on_topicWrite_clicked();
     void topicReadReady();
     void on_topicRead_clicked();
-
-
-
     void on_portWrite_clicked();
     void portReadReady();
     void on_portRead_clicked();
-
     void on_idWrite_clicked();
     void idReadReady();
     void on_idRead_clicked();
-
     void on_mqttStatuWrite_clicked();
     void mqttStatuReadReady();
     void on_mqttStatusRead_clicked();
-
     void on_SNPushButtonWrite_clicked();
-
     void on_pidButtonWrite_8_clicked();
     void intervalReadReady();
     void on_intervalRead_clicked();
-
     void on_idWrite_2_clicked();
+    void on_pushButton_3_clicked();
+
+    void on_mbusSetReload_clicked();
+
+    void on_nbApply_clicked();
+
+    void on_nbReload_clicked();
+
+    void on_mqttApply_clicked();
+
+    void on_mqttReload_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -346,11 +321,10 @@ private:
     QModbusClient *modbusDevice;
     SettingsDialog *m_settingsDialog;
     logdialog *m_logdialog;
+    systemDialog *m_system;
     WriteRegisterModel *writeModel;
     QStandardItemModel *m_Model;
-
     QSerialPort *m_serial;
-
     QList<QStandardItem *> storageItems;
 };
 

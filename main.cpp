@@ -55,12 +55,13 @@
 #include <QFile>
 #include <QDebug>
 #include <QDialog>
+#include "logindialog.h"
 
 int main(int argc, char *argv[])
 {
     // TODO uncomment this line before release
     // right now we always need it
-    QLoggingCategory::setFilterRules(QStringLiteral("qt.modbus* = true"));
+    // QLoggingCategory::setFilterRules(QStringLiteral("qt.modbus* = true"));
     QApplication a(argc, argv);
 
 #ifdef SKIN
@@ -71,9 +72,20 @@ int main(int argc, char *argv[])
            qss.close();
     }
 #endif
-
     MainWindow w;
-    w.show();
 
+#ifdef LOGIN
+    logindialog log;
+    log.show();
+    if (log.exec() == QDialog::Accepted){
+        w.show();
+        return a.exec();
+    }else {
+        return 0;
+    }
+#else
+    w.show();
     return a.exec();
+#endif
+
 }
