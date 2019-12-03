@@ -207,10 +207,12 @@ void MainWindow::on_mqttApply_clicked()
         _sleep(2000);
     }
 
+#if 0
     if (ui->intervalLineEdit->text() != ""){
         emit on_idWrite_2_clicked();
         _sleep(2000);
     }
+#endif
 
     ui->mqttApply->setEnabled(true);
 }
@@ -226,8 +228,12 @@ void MainWindow::on_mqttReload_clicked()
     on_topicRead_clicked();
     _sleep(2000);
     on_idRead_clicked();
+
+#if 0
     _sleep(2000);
     on_intervalRead_clicked();
+#endif
+
     _sleep(2000);
     on_mqttStatusRead_clicked();
 

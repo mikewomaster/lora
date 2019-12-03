@@ -53,6 +53,17 @@ void MainWindow::nbStatusFill(short res, QLineEdit *le)
    }
 }
 
+void MainWindow::mqttStatusFill(short res, QLineEdit *le){
+    switch(res){
+        case 0:
+            le->setText("DISCONNECTED");
+            break;
+        case 1:
+            le->setText("CONNECTED");
+            break;
+    }
+}
+
 void MainWindow::handle_read_ready(QLineEdit* le)
 {
     auto reply = qobject_cast<QModbusReply *>(sender());
@@ -64,8 +75,10 @@ void MainWindow::handle_read_ready(QLineEdit* le)
         short entry = unit.value(0);
         if (le == ui->nbStatusLineEdit) {
             nbStatusFill(entry, ui->nbStatusLineEdit);
+        }else if (le == ui->mqttStatusLineEdit){
+            mqttStatusFill(entry, ui->mqttStatusLineEdit);
         }else{
-            le->setText(QString::number(entry));
+              le->setText(QString::number(entry));
         }
         statusBar()->showMessage(tr("OK!"));
     } else if (reply->error() == QModbusDevice::ProtocolError) {

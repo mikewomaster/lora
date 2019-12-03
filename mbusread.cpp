@@ -8,6 +8,8 @@
 
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
+#include "mbus_protocol.h"
+#include "mbus_protocol_aux.h"
 
 #define DeviceNumber 20
 #define DeviceHeadMemory 20
@@ -31,6 +33,7 @@ void MainWindow::mbusReadDeviceReadReady()
     auto reply = qobject_cast<QModbusReply *>(sender());
     if (!reply)
         return;
+    char buf[16];
 
     if (reply->error() == QModbusDevice::NoError) {
         const QModbusDataUnit unit = reply->result();
@@ -42,27 +45,35 @@ void MainWindow::mbusReadDeviceReadReady()
         // HEAD Always 40 bytes, 20 regs
         // append device primary address
         temp_2 = unit.value(0) >> 8;
-        QStandardItem *primaryAddr = new QStandardItem(QString::number(temp_2, 16).toUpper());
+        QStandardItem *primaryAddr = new QStandardItem(QString::number(temp_2, 10).toUpper());
         item.append(primaryAddr);
         storageItems.push_back(primaryAddr);
 
         // append device primary mode
         temp_2 = (unit.value(0) & 0x00ff);
-        QStandardItem *primaryMode = new QStandardItem(QString::number(temp_2, 16).toUpper());
+        QString stringPrimary;
+        if (temp_2 == 0) {
+            stringPrimary = "Primary";
+        }else {
+            stringPrimary = "Seconodary";
+        }
+        QStandardItem *primaryMode = new QStandardItem(stringPrimary);
         item.append(primaryMode);
         storageItems.push_back(primaryMode);
 
         // append ID Number
         temp_4 = unit.value(5);
         temp_4 = (temp_4 << 16) + unit.value(6);
-        QStandardItem *id = new QStandardItem(QString::number(temp_4, 16).toUpper());
+        QStandardItem *id = new QStandardItem(QString::number(temp_4, 10).toUpper());
         item.append(id);
         storageItems.push_back(id);
 
         // append Man Number
-        temp_2 = unit.value(7);
-        QStandardItem *manu = new QStandardItem(QString::number(temp_2, 16).toUpper());
-        item.append(new QStandardItem(QString::number(temp_2, 16).toUpper()));
+        temp_4 = unit.value(7);
+        memset(buf, 0, sizeof(buf));
+        mbus_decode_manufacturer((temp_4 & 0xff), ((temp_4>>8) & 0xff), buf, sizeof(buf));
+        QStandardItem *manu = new QStandardItem(buf);
+        item.append(manu);
         storageItems.push_back(manu);
 
         // append version
@@ -73,11 +84,11 @@ void MainWindow::mbusReadDeviceReadReady()
 
         // append medium
         temp_2 = (unit.value(8) & 0x00ff);
-        QStandardItem *medium = new QStandardItem(QString::number(temp_2, 16).toUpper());
+        memset(buf, 0, sizeof(buf));
+        mbus_data_variable_medium_lookup(temp_2, buf, sizeof(buf));
+        QStandardItem *medium = new QStandardItem(buf);
         item.append(medium);
         storageItems.push_back(medium);
-
-        // m_Model->appendRow(item);
 
         statusBar()->showMessage(tr("OK!"));
     } else if (reply->error() == QModbusDevice::ProtocolError) {
@@ -101,30 +112,12 @@ void MainWindow::mbusReadValueReadReady()
     if (reply->error() == QModbusDevice::NoError) {
         const QModbusDataUnit unit = reply->result();
         unsigned char temp_2;
-        unsigned int temp_4;
+        // unsigned int temp_4;
         quint64 temp_8;
 
         for (int i = 0; i < 5; i++) {
             if (unit.value(i*10 + 0) == 0xffff )
                 continue;
-
-            // append type
-            temp_2 = unit.value( i*10 + 0) >> 8;
-            QStandardItem *type = new QStandardItem(QString::number(temp_2, 16).toUpper());
-            storageItems.push_back(type);
-            item.append(type);
-
-            // append unit
-            temp_2 = (unit.value(i*10+0) & 0x00ff);
-            QStandardItem* uni = new QStandardItem(QString::number(temp_2, 16).toUpper());
-            storageItems.push_back(uni);
-            item.append(uni);
-
-            // append scale
-            temp_4 = unit.value(i*10+1);
-            QStandardItem *scale = new QStandardItem(QString::number(temp_4, 16).toUpper());
-            storageItems.push_back(scale);
-            item.append(scale);
 
             // append value
             memset(&temp_8, 0, sizeof(temp_8));
@@ -132,20 +125,67 @@ void MainWindow::mbusReadValueReadReady()
                temp_8 = temp_8 << 16;
                temp_8 = temp_8 + unit.value(i*10 + 2 + j);
             }
-            QStandardItem *va = new QStandardItem(QString::number(temp_8, 16).toUpper());
-            storageItems.push_back(va);
-            item.append(va);
+
+            // QStandardItem *va = new QStandardItem(QString::number(temp_8, 16).toUpper());
+            // storageItems.push_back(va);
+            // item.append(va);
+
+            // append unit
+            // temp_2 = (unit.value(i*10+0) & 0x00ff);
+            // QStandardItem* uni = new QStandardItem(QString::number(temp_2, 16).toUpper());
+            // storageItems.push_back(uni);
+            // item.append(uni);
+
+            /*
+                        // append type
+                        temp_2 = unit.value( i*10 + 0) >> 8;
+                        QStandardItem *type = new QStandardItem(QString::number(temp_2, 16).toUpper());
+                        storageItems.push_back(type);
+                        item.append(type);
+            */
+
+            /*
+                        // append scale
+                        temp_4 = unit.value(i*10+1);
+                        QStandardItem *scale = new QStandardItem(QString::number(temp_4, 16).toUpper());
+                        storageItems.push_back(scale);
+                        item.append(scale);
+            */
+            temp_2 = unit.value(i*10 +0) & 0x00ff;
+            int vif = temp_2;
+            double value_in = temp_8, value_out;
+            char *unit_str, *quantity_str;
+            mbus_vif_unit_normalize(vif, value_in, &unit_str, &value_out, &quantity_str);
+            //qDebug("%lf, %s  %s", value_out, unit_str, quantity_str);
+
+            // value -> value_out
+            QStandardItem *valueItem = new QStandardItem(QString::number(value_out,'g',10));
+            item.append(valueItem);
+            storageItems.push_back(valueItem);
+
+            // unit -> unit_str
+            QStandardItem *unitItem = new QStandardItem(unit_str);
+            item.append(unitItem);
+            storageItems.push_back(unitItem);
+
+            // description -> quantity_str
+            QStandardItem *quantityItem = new QStandardItem(quantity_str);
+            item.append(quantityItem);
+            storageItems.push_back(quantityItem);
 
             // append timestamp
             quint64 data;
             data = unit.value(i*10 + 8);
             data = (data << 16) + unit.value(i*10 + 9);
-            QStandardItem* ts = new QStandardItem(QString::number(data, 16).toUpper());
+
+            QDateTime time = QDateTime::fromTime_t(data);
+            QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+            QStandardItem* ts = new QStandardItem(StrCurrentTime);
             storageItems.push_back(ts);
             item.append(ts);
 
             m_Model->appendRow(item);
-            for (int i = 0; i < 5 ; i++){ // remove no.6/7/8/9/10
+            for (int i = 0; i < 4 ; i++){ // remove no.6/7/8/9
                 item.removeAt(6);
             }
         }
@@ -172,6 +212,7 @@ void MainWindow::on_mbusPrimaryRead_clicked()
     QStringList textList = text.split(",");
 
     for (int i = 0; i < textList.size(); i++) {
+        ui->mbusPrimaryRead->setEnabled(false);
         int multiplyTerm = textList.at(i).toInt() - 1;
         quint16 ADDR = mbusReadDeviceRAMAddr + mbusReadDeviceRAMEntries * multiplyTerm;
 
@@ -202,9 +243,9 @@ void MainWindow::on_mbusPrimaryRead_clicked()
             } else {
                 statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
             }
-
-            // delay 1 second
-            _sleep(5000);
+            // delay 3 seconds
+            _sleep(3000);
         }
+        ui->mbusPrimaryRead->setEnabled(true);
     }
 }

@@ -21,10 +21,12 @@ void MainWindow::on_pushButton_3_clicked()
         _sleep(3000);
     }
 
+#if 0
     if (ui->mbusSecondaryEdit->text() != "") {
         emit on_mbusSecondaryWrite_clicked();
         _sleep(3000);
     }
+#endif
 
     if (ui->mbusReadOutEdit->text() != "") {
         emit on_mbusReadoutWrite_clicked();
@@ -45,8 +47,10 @@ void MainWindow::on_mbusSetReload_clicked()
     emit on_mbusPrimaryRead_12_clicked();
     _sleep(3000);
 
+#if 0
     emit on_mbusSecondaryRead_clicked();
     _sleep(3000);
+#endif
 
     emit on_mbusReadoutRead_clicked();
     _sleep(3000);

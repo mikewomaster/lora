@@ -1,13 +1,19 @@
 /* === Shared === */
 QStackedWidget, QLabel, QPushButton, QRadioButton, QCheckBox,
 QGroupBox, QStatusBar, QToolButton, QComboBox, QDialog, QWidget {
-    /*background-color: #222222;*/
-    background-color: #4169E1;
-    color: #BBBBBB;
+    /* background-color: #222222; */
+    /* background-color: #4169E1; */
+    /* color: #BBBBBB; */
     font-family: "Arial";
     font-size: 16px;
 }
 
+QTabBar::tab:disabled {
+    width: 0;
+    color: transparent;
+}
+
+#if 0
 /* === QWidget === */
 QWidget:window {
     background: #222222;
@@ -380,3 +386,4 @@ QTreeView::item:selected {
 QFrame#infoLabel {
     border: 1px inset #333333;
 }
+#endif

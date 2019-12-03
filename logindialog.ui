@@ -86,7 +86,7 @@
     <string>Quit</string>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -216,6 +216,13 @@
    </layout>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>serialComBox</tabstop>
+  <tabstop>usernameLineEdit</tabstop>
+  <tabstop>passwordLineEdit</tabstop>
+  <tabstop>loginPushButton</tabstop>
+  <tabstop>quitPushButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

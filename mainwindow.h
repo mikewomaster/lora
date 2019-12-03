@@ -59,8 +59,8 @@
 #include <QTime>
 
 // MACRO CRONTROL Area
-// #define TEST_DATA
-// #define SKIN
+//#define TEST_DATA
+#define SKIN
 // #define LOGIN
 // #define STORE
 #define ADMIN
@@ -146,6 +146,7 @@ private:
     void nb_handle_write(QLineEdit*, int, int);
     void nb_handle_read_ready(QLineEdit* );
     void nbStatusFill(short, QLineEdit*);
+    void mqttStatusFill(short, QLineEdit*);
 private slots:
     void on_connectButton_clicked();
     void onStateChanged(int state);

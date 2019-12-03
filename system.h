@@ -22,6 +22,9 @@ class system;
 
 QT_END_NAMESPACE
 
+#define SNAddr2 (142 - 1)
+#define SNEntries2 8
+
 class systemDialog : public QDialog
 {
     Q_OBJECT
@@ -45,11 +48,14 @@ private slots:
 
     void usernameReadReady();
 
+    void on_SNRead_clicked();
+
+    void SNReadReady();
 private:
     Ui::system *ui;
     void handle_read(int addr, int entry, void (systemDialog::*fp)());
     void handle_readready(QLineEdit *le);
-    void handle_write(QLineEdit* le, int addr, int entry);
+    void handle_write(int addr, int entry);
     QString m_username;
     QString m_password;
 };

@@ -95,7 +95,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_Model->setHorizontalHeaderItem(0, new QStandardItem(QObject::tr("Address")));
     m_Model->setHorizontalHeaderItem(1, new QStandardItem(QObject::tr("Mode")));
-    m_Model->setHorizontalHeaderItem(2, new QStandardItem(QObject::tr("SerialNumber")));
+    m_Model->setHorizontalHeaderItem(2, new QStandardItem(QObject::tr("SerialNumber ")));
     m_Model->setHorizontalHeaderItem(3, new QStandardItem(QObject::tr("Manu")));
     m_Model->setHorizontalHeaderItem(4, new QStandardItem(QObject::tr("Version")));
     m_Model->setHorizontalHeaderItem(5, new QStandardItem(QObject::tr("Medium")));
@@ -104,7 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_Model->setHorizontalHeaderItem(7, new QStandardItem(QObject::tr("Unit")));
     // m_Model->setHorizontalHeaderItem(8, new QStandardItem(QObject::tr("Scale")));
     m_Model->setHorizontalHeaderItem(8, new QStandardItem(QObject::tr("Description")));
-    m_Model->setHorizontalHeaderItem(9, new QStandardItem(QObject::tr("TimeStamp")));
+    m_Model->setHorizontalHeaderItem(9, new QStandardItem(QObject::tr("TimeStamp  ")));
 
     ui->connectType->hide();
     ui->serverEdit->hide();
@@ -112,7 +112,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->OptimizeLowRateComboBox->hide();
     ui->tabWidget_2->show();
     ui->tabWidget_2->setTabEnabled(5, false);
-    ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+    // ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
     ui->tabWidget->hide();
     ui->groupBox_6->hide();
     ui->groupBox_11->hide();
@@ -155,6 +155,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mqttStatusRead->hide();
     ui->pidButtonWrite_8->hide();
 
+    ui->intervalLineEdit->hide();
+    ui->intervalRead->hide();
+    ui->idWrite_2->hide();
+
+    ui->mbusSecondaryEdit->hide();
+    ui->mbusSecondaryRead->hide();
+    ui->mbusSecondaryWrite->hide();
+
 #ifdef TEST_DATA
     QList<QStandardItem *> item;
     item.append(new QStandardItem(QObject::tr("Always")));
@@ -184,9 +192,25 @@ MainWindow::MainWindow(QWidget *parent)
     item.append(new QStandardItem(QObject::tr("HMS Heat")));
     m_Model->appendRow(item);
     item.clear();
+
+    item.append(new QStandardItem(QObject::tr("3")));
+    item.append(new QStandardItem(QObject::tr("primary")));
+    item.append(new QStandardItem(QObject::tr("201911040001")));
+    item.append(new QStandardItem(QObject::tr("WM")));
+    item.append(new QStandardItem(QObject::tr("0.0.1")));
+    item.append(new QStandardItem(QObject::tr("Heat")));
+    item.append(new QStandardItem(QObject::tr("2 BCD")));
+    item.append(new QStandardItem(QObject::tr("J/h")));
+    item.append(new QStandardItem(QObject::tr("0.001")));
+    item.append(new QStandardItem(QObject::tr("99.6")));
+    item.append(new QStandardItem(QObject::tr("HMS Heat Downtown Man Shoot 3!")));
+    m_Model->appendRow(item);
+    item.clear();
 #endif
 
     ui->tableView->setModel(m_Model);
+    ui->tableView->verticalHeader()->hide();
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     // resize
 #if 0

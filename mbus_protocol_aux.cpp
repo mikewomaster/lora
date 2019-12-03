@@ -696,7 +696,7 @@ char unknown_str[] = "Unknown";
 int
 mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_out, char **quantity_out)
 {
-    double exponent = 1.0;
+    // double exponent = 1.0;
     unsigned newVif = vif & 0xF7F; /* clear extension bit */
     int i;
 
@@ -721,7 +721,7 @@ mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_ou
 
     *unit_out = unknown_str;//strdup("Unknown (VIF=0x%.2X)");
     *quantity_out = unknown_str;//strdup("Unknown");
-    exponent = 0.0;
+    // exponent = 0.0;
     *value_out = 0.0;
     return -1;
 }

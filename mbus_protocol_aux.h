@@ -75,7 +75,6 @@
 #define MBUS_PROBE_COLLISION 2
 #define MBUS_PROBE_ERROR     -1
 
-#pragma anon_unions
 /**
  * MBus slave address type (primary/secodary address)
  */

@@ -204,12 +204,11 @@ void systemDialog::on_systemApply_clicked()
     //CommanHelper::sleep(2000);
     //handle_write(ui->passwordLineEdit, PasswordAddress, PasswordEntries);
 
-    handle_write(ui->usernameLineEdit, UsernameAddress, UsernameEntries+PasswordEntries);
-
+    handle_write(UsernameAddress, UsernameEntries+PasswordEntries);
     ui->systemApply->setEnabled(true);
 }
 
-void systemDialog::handle_write(QLineEdit* le, int addr, int entry)
+void systemDialog::handle_write(int addr, int entry)
 {
     QString str1 = ui->usernameLineEdit->text();
     QString str2 = ui->passwordLineEdit->text();
@@ -280,6 +279,53 @@ void systemDialog::handle_write(QLineEdit* le, int addr, int entry)
             // broadcast replies return immediately
             reply->deleteLater();
         }
+    } else {
+
+    }
+}
+
+void systemDialog::SNReadReady()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        QString s;
+        for (uint i = 0; i < unit.valueCount(); i++) {
+            if ((unit.value(i) >> 8) == 0x00)
+                break;
+            s[2*i] = unit.value(i) >> 8;
+
+            if ((unit.value(i) & 0x00ff == 0x00)) {
+                break;
+            }
+            s[(2*i) +1] = unit.value(i) & 0x00ff;
+        }
+        ui->SNShow->setText(s);
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+
+    } else {
+
+    }
+    reply->deleteLater();
+}
+
+void systemDialog::on_SNRead_clicked()
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    QModbusClient* modbusDevice = w->getModbusDevice();
+
+    quint16 ADDR = SNAddr2;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, SNEntries2);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1)) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &systemDialog::SNReadReady);
+        else
+            delete reply; // broadcast replies return immediately
     } else {
 
     }
