@@ -51,6 +51,8 @@ private slots:
     void on_SNRead_clicked();
 
     void SNReadReady();
+    void on_pushButton_clicked();
+
 private:
     Ui::system *ui;
     void handle_read(int addr, int entry, void (systemDialog::*fp)());

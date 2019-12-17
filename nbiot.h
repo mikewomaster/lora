@@ -10,6 +10,9 @@
 #define NBPwdAddress (4025 - 1)
 #define NBPwdEntries 8
 
+#define NBIoTModelAddress (4033 - 1)
+#define NBIoTEntries 1
+
 #define NBStatusAddress (5001 - 1)
 #define NBStatusEntries 1
 

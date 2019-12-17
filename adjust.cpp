@@ -19,6 +19,25 @@ void MainWindow::handle_write(QLineEdit* l, quint16 add)
     writeSingleHoldingRegister(writeUnit);
 }
 
+void MainWindow::handle_write(QRadioButton *r, quint16 add)
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, add, 1);
+
+    quint16 currentOutputValue;
+    if (r == ui->abpEnable){
+        currentOutputValue = 0;
+    }else if (r == ui->otaaEnable){
+        currentOutputValue = 1;
+    }
+
+    writeUnit.setValue(0, currentOutputValue);
+    writeSingleHoldingRegister(writeUnit);
+}
+
 void MainWindow::nbStatusFill(short res, QLineEdit *le)
 {
    switch(res)

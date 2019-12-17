@@ -54,6 +54,8 @@
 #include "logdialog.h"
 #include "system.h"
 #include "writeregistermodel.h"
+#include "netmodel.h"
+#include "logindialog.h"
 
 #include <QModbusTcpClient>
 #include <QModbusRtuSerialMaster>
@@ -77,8 +79,12 @@ MainWindow::MainWindow(QWidget *parent)
     , modbusDevice(nullptr)
     , m_Model(new QStandardItemModel())
     , m_serial(new QSerialPort)
+    , m_login_flag(0)
 {
     ui->setupUi(this);
+
+    QString title = UtilityVersion;
+    setWindowTitle(title);
 
     m_settingsDialog = new SettingsDialog(this);
     m_logdialog = new logdialog(this);
@@ -90,8 +96,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->connectType->setCurrentIndex(0);
     on_connectType_currentIndexChanged(0);
 
-    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
-       ui->portComboBox->addItem(info.portName());
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts()) {
+        serialInfoVector.push_back(info.portName());
+        ui->portComboBox->addItem(info.portName());
+    }
 
     m_Model->setHorizontalHeaderItem(0, new QStandardItem(QObject::tr("Address")));
     m_Model->setHorizontalHeaderItem(1, new QStandardItem(QObject::tr("Mode")));
@@ -110,12 +118,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->serverEdit->hide();
     ui->syncWordLineEdit->hide();
     ui->OptimizeLowRateComboBox->hide();
-    ui->tabWidget_2->show();
-    ui->tabWidget_2->setTabEnabled(5, false);
-    // ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
-    ui->tabWidget->hide();
+
+
+    ui->tabWidget->setTabEnabled(6, false);
     ui->groupBox_6->hide();
-    ui->groupBox_11->hide();
+
+    ui->tabWidget->show();
+    ui->tabWidget_2->hide();
+
     ui->groupBox_13->hide();
     ui->mbusRegister->hide();
     ui->mbusPrimaryEdit->setText("1");
@@ -163,6 +173,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mbusSecondaryRead->hide();
     ui->mbusSecondaryWrite->hide();
 
+    // SN hide
+    ui->SNLineEdit->hide();
+    ui->SNPushButton->hide();
+    ui->SNPushButtonWrite->hide();
+
+    // menubar hide
+    ui->menuDevice->setVisible(false);
 #ifdef TEST_DATA
     QList<QStandardItem *> item;
     item.append(new QStandardItem(QObject::tr("Always")));
@@ -221,7 +238,35 @@ MainWindow::MainWindow(QWidget *parent)
     windowLayoutAdjust->addWidget(ui->tabWidget_2);
     widgetAdjust->setLayout(windowLayoutAdjust);
 #endif
-    //
+
+    // nb
+    ui->nbModelRead->hide();
+    ui->nbModeWrite->hide();
+
+    ui->BitMapTextEdit->hide();
+
+    // table view
+    m_pModel = new NetModel(nullptr);
+    ui->netBitMapTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->netBitMapTableView->setShowGrid(false);
+    ui->netBitMapTableView->setFrameShape(QFrame::NoFrame);
+    ui->netBitMapTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->netBitMapTableView->setModel(m_pModel);
+
+    ui->coapInterval->hide();
+
+    QList<Device> recordList;
+    for (int i = 1; i <= 250; ++i)
+    {
+        Device record;
+        record.bChecked = false;
+        record.id = i;
+        record.devDesc = "";
+        recordList.append(record);
+    }
+    m_pModel->updateData(recordList);
+
+    serialAlarmInit();
 }
 
 MainWindow::~MainWindow()
@@ -235,6 +280,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::initActions()
 {
+#ifdef ACTION
     ui->actionConnect->setEnabled(true); 
     ui->actionDisconnect->setEnabled(false);
     ui->actionExit->setEnabled(true);
@@ -244,11 +290,15 @@ void MainWindow::initActions()
     connect(ui->actionDisconnect, &QAction::triggered,this, &MainWindow::on_connectButton_clicked);
     connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
     connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
-    connect(ui->actionLog, &QAction::triggered, m_logdialog, &QDialog::show);
-
+    //connect(ui->actionLog, &QAction::triggered, m_logdialog, &QDialog::show);
+#endif
     ui->action_Settings->setEnabled(true);
     connect(ui->action_Settings, &QAction::triggered, m_system, &QDialog::show);
 
+    ui->action_Default->setEnabled(true);
+    connect(ui->action_Default, &QAction::triggered, this, &MainWindow::defaultTheme);
+    ui->actionDa_rk->setEnabled(true);
+    connect(ui->actionDa_rk, &QAction::triggered, this, &MainWindow::darkTheme);
 }
 
 void MainWindow::findComPort()
@@ -366,9 +416,36 @@ void MainWindow::setIOChannel()
         ui->PWMOutputComboBox->addItem("6");
         ui->PWMOutputComboBox->addItem("7");
     }
+    else if (modelName.contains("LR")){
+        ui->currentInputComboBox->addItem("1");
+        ui->currentInputComboBox->addItem("3");
+
+        ui->voltageInputComboBox->addItem("0");
+        ui->voltageInputComboBox->addItem("2");
+    }
     else if (modelName.contains("Un")){
         // no channel IO
     }
+}
+
+void MainWindow::setWidget()
+{
+    QString s = ui->portEdit_3->text();
+    qDebug() << s;
+    if (s.contains("SCB")){
+        ui->tabWidget->hide();
+        ui->tabWidget_2->show();
+    }
+    else if (s.contains("LM")) {
+        ui->tabWidget->setTabEnabled(3, false);
+        ui->tabWidget->setTabEnabled(4, false);
+    }else if (s.contains("LC")){
+        ui->tabWidget->setTabEnabled(3, false);
+    }else if (s.contains("LR")){
+        ui->tabWidget->setTabEnabled(1, false);
+        ui->tabWidget->setTabEnabled(4, false);
+    }
+    ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
 }
 
 void MainWindow::on_connectButton_clicked()
@@ -377,7 +454,21 @@ void MainWindow::on_connectButton_clicked()
         return;
 
     statusBar()->clearMessage();
-    if (modbusDevice->state() != QModbusDevice::ConnectedState) {
+
+    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+            modbusDevice->disconnectDevice();
+            ui->actionConnect->setEnabled(true);
+            ui->actionDisconnect->setEnabled(false);
+            ui->portEdit_3->clear();
+            m_login_flag = 0;
+     } else {
+        logindialog *log = new logindialog(this);
+        log->show();
+
+        while(!m_login_flag){
+            _sleep(1500);
+        }
+#if 0
         if (static_cast<ModbusConnection> (ui->connectType->currentIndex()) == Serial) {
             modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
                 ui->portComboBox->currentText());
@@ -396,24 +487,24 @@ void MainWindow::on_connectButton_clicked()
             modbusDevice->setConnectionParameter(QModbusDevice::NetworkAddressParameter, url.host());
             */
         }
-
         modbusDevice->setTimeout(m_settingsDialog->settings().responseTime);
         modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
+
+
         if (!modbusDevice->connectDevice()) {
             statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
         } else {
             ui->actionConnect->setEnabled(false);
             ui->actionDisconnect->setEnabled(true);
         }
-    } else {
-        modbusDevice->disconnectDevice();
-        ui->actionConnect->setEnabled(true);
-        ui->actionDisconnect->setEnabled(false);
-        ui->portEdit_3->clear();
+#endif
+        ui->actionConnect->setEnabled(false);
+        ui->actionDisconnect->setEnabled(true);
     }
 
     setModelName();
     setIOChannel();
+    setWidget();
 }
 
 void MainWindow::onStateChanged(int state)
@@ -463,4 +554,58 @@ void MainWindow::_sleep(unsigned int msec)
     QTime reachTime = QTime::currentTime().addMSecs(msec);
     while( QTime::currentTime() < reachTime)
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+}
+
+void MainWindow::defaultTheme()
+{
+    QFile qss(":stylesheet.qss");
+    if( qss.open(QFile::ReadOnly)) {
+           QString style = QLatin1String(qss.readAll());
+           this->setStyleSheet(style);
+           qss.close();
+    }
+    ui->tabWidget->setTabEnabled(6, false);
+    ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+}
+
+void MainWindow::darkTheme()
+{
+    QFile qss(":stylesheetblack.qss");
+    if( qss.open(QFile::ReadOnly)) {
+           QString style = QLatin1String(qss.readAll());
+           this->setStyleSheet(style);
+           qss.close();
+    }
+    ui->tabWidget->setTabEnabled(6, true);
+    ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+}
+
+void MainWindow::on_netBitMapClear_clicked()
+{
+    m_pModel->clearDate();
+}
+
+void MainWindow::serialAlarmInit()
+{
+    serialAlarm = new QTimer();
+    serialAlarm->stop();
+    serialAlarm->setInterval(1000);
+    connect(serialAlarm, SIGNAL(timeout()), this, SLOT(serialAlarmTask()));
+    serialAlarm->start();
+}
+
+void MainWindow::serialAlarmTask()
+{
+    QVector<QString> tmp;
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts()) {
+        tmp.push_back(info.portName());
+    }
+    if (tmp != serialInfoVector) {
+        serialInfoVector.clear();
+        ui->portComboBox->clear();
+        foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts()) {
+            serialInfoVector.push_back(info.portName());
+            ui->portComboBox->addItem(info.portName());
+        }
+    }
 }

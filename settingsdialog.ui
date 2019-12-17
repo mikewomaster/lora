@@ -47,7 +47,7 @@
    <item row="4" column="1">
     <widget class="QPushButton" name="applyButton">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
        <horstretch>0</horstretch>
        <verstretch>5</verstretch>
       </sizepolicy>

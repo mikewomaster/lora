@@ -251,7 +251,6 @@ void MainWindow::on_aesComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_netAesKeyWrite_clicked()
 {
-
     QString str = ui->aesLineEdit->text();
     if (str.size() != 16) {
         QMessageBox::information(NULL, "Error","Length of AES Key Should be 16!");
@@ -304,6 +303,16 @@ void MainWindow::bitMapReadReady()
         return;
 
     if (reply->error() == QModbusDevice::NoError) {
+
+        QList<Device> recordList;
+        for (int i = 1; i <= 0xff; ++i)
+        {
+            Device record;
+            record.bChecked = false;
+            record.id = i;
+            recordList.append(record);
+        }
+
         const QModbusDataUnit unit = reply->result();
 
         ui->BitMapTextEdit->clear();
@@ -315,18 +324,25 @@ void MainWindow::bitMapReadReady()
                 for (int j = 0; j < 8; j++) {
                     if ( (byteLow & (1 << j)) != 0 ) {
                         int k = (i*16) + (j+1);
-                        ui->BitMapTextEdit->append(QString::number(k));
+                        Device temp = recordList[k-1];
+                        temp.bChecked = true;
+                        recordList.replace(k-1,temp);
+                        //ui->BitMapTextEdit->append(QString::number(k));
                     }
                 }
 
                 for (int j = 0; j < 8; j++) {
                     if ( (byteHigh & (1 << j)) != 0 ) {
                         int k = (i*16) + (j+9);
-                        ui->BitMapTextEdit->append(QString::number(k));
+                        Device temp = recordList[k-1];
+                        temp.bChecked = true;
+                        recordList.replace(k-1,temp);
+                        //ui->BitMapTextEdit->append(QString::number(k));
                     }
                 }
             }
         }
+        m_pModel->updateData(recordList);
         statusBar()->showMessage(tr("OK!"));
     } else if (reply->error() == QModbusDevice::ProtocolError) {
         statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
@@ -360,19 +376,29 @@ void MainWindow::on_netBitMapRead_clicked()
     }
 }
 
+
 void MainWindow::on_netBitMapWrite_clicked()
 {
-    QString text = ui->BitMapTextEdit->toPlainText();
-    QStringList textList = text.split(",");
+    // QString text = ui->BitMapTextEdit->toPlainText();
+    // QStringList textList = text.split("\n");
+
+    QStringList textList;
+    for(int i = 0; i < 0xff; i++)
+    {
+        QModelIndex index = m_pModel->index(i, 0);
+        if (m_pModel->data(index, Qt::CheckStateRole).toBool()) {
+            textList.push_back(QString::number(i + 1));
+        }
+    }
 
     unsigned char temp[32];
     memset(temp, 0, 32);
     for (int i = 0; i < textList.size(); i++) {
         int move = textList.at(i).toInt();
         if ((move-1) % 16 < 8) {
-            temp[(move-1)/8 + 1] = temp[(move-1)/8 + 1] + (1 << ((move-1)%8)); //低字节放在后面
-        } else if ((move-1) % 16 > 8) {
-            temp[(move-1)/8 - 1] = temp[(move-1)/8 - 1] + (1 << ((move-1)%8)); //高字节放在前面
+            temp[(move-1)/8 + 1] = temp[(move-1)/8 + 1] + (1 << ((move-1)%8)); // 低字节在后
+        } else if ((move-1) % 16 >= 8) {
+            temp[(move-1)/8 - 1] = temp[(move-1)/8 - 1] + (1 << ((move-1)%8)); // 高字节在前
         }
     }
 
@@ -465,4 +491,20 @@ void MainWindow::on_SNPushButton_clicked()
 void MainWindow::on_SNPushButtonWrite_clicked()
 {
     nb_handle_write(ui->SNLineEdit, SNAddr, SNEntries);
+}
+
+void MainWindow::on_abpEnable_clicked()
+{
+    if (ui->abpEnable->isChecked()){
+        ui->otaaEnable->setChecked(false);
+        handle_write(ui->abpEnable, loraWANEnable);
+    }
+}
+
+void MainWindow::on_otaaEnable_clicked()
+{
+    if (ui->otaaEnable->isChecked()){
+        ui->abpEnable->setChecked(false);
+        handle_write(ui->otaaEnable, loraWANEnable);
+    }
 }

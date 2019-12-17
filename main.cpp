@@ -72,19 +72,29 @@ int main(int argc, char *argv[])
            qss.close();
     }
 #endif
-    MainWindow w;
-    w.setFixedSize(1054, 682);
+
+    MainWindow *w = new MainWindow();
+    w->setFixedSize(1027, 675);
+
+    QFile qss(":stylesheet.qss");
+    if( qss.open(QFile::ReadOnly)) {
+           QString style = QLatin1String(qss.readAll());
+           w->setStyleSheet(style);
+           qss.close();
+    }
+
 #ifdef LOGIN
-    logindialog log;
+    logindialog log(w);
     log.show();
     if (log.exec() == QDialog::Accepted){
-        w.show();
+        w->show();
+        w->on_connectButton_clicked();
         return a.exec();
     }else {
         return 0;
     }
 #else
-    w.show();
+    w->show();
     return a.exec();
 #endif
 

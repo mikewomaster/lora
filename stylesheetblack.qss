@@ -1,23 +1,15 @@
 /* === Shared === */
 QStackedWidget, QLabel, QPushButton, QRadioButton, QCheckBox,
-QGroupBox, QStatusBar, QToolButton, QComboBox, QDialog, QWidget, QMenu {
+QGroupBox, QStatusBar, QToolButton, QComboBox, QDialog, QWidget {
+    background-color: #222222;
+    color: #BBBBBB;
     font-family: "Arial";
     font-size: 16px;
 }
-
-QMenu::item{
-    padding: 2px 25px 2px 20px;
-    border: 1px solid transparent;
-    font-family: "Arial";
-    font-size: 16px;
-}
-
 QTabBar::tab:disabled {
-    width: 0;
-    color: transparent;
+     width: 0;
+     color: yellow;
 }
-
-#if 0
 /* === QWidget === */
 QWidget:window {
     background: #222222;
@@ -120,30 +112,22 @@ QTabWidget::pane {
 }
 
 /* === QTabBar === */
+
 QTabBar::tab {
     background: transparent;
-    border: 1px solid #333333;
-    border-bottom: none;
     color: #BBBBBB;
-    padding-left: 5px;
-    padding-right: 10px;
-    padding-top: 3px;
-    padding-bottom: 3px;
 }
 
 QTabBar::tab:hover {
     background-color: #333333;
-    border: 1px solid #444444;
     border-bottom: none;
 }
 
 QTabBar::tab:selected {
     background-color: #111111;
-    border: 1px solid #333333;
-    border-top: 1px solid yellow;
-    border-bottom: none;
     color: yellow
 }
+
 
 /* === QToolBar === */
 QToolBar {
@@ -255,6 +239,11 @@ QMenuBar::item:selected {
 
 QMenuBar::item:pressed {
     background: #444444;
+}
+
+QMenu::item{
+    font-family: "Arial";
+    font-size: 16px;
 }
 
 /* === QScrollBar:vertical === */
@@ -390,4 +379,8 @@ QTreeView::item:selected {
 QFrame#infoLabel {
     border: 1px inset #333333;
 }
-#endif
+
+QTabBar::tab:disabled {
+     width: 0;
+     color: yellow;
+}

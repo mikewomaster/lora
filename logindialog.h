@@ -7,7 +7,8 @@
 #define Entries 8
 #define USERNAME (181 - 1)
 #define PASSWORD (189 - 1)
-
+#define LoginADDR (200 - 1)
+#define AddrEntries 16
 namespace Ui {
 class logindialog;
 }

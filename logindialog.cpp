@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <QTime>
 #include <QPalette>
+#include "mainwindow.h"
 #include "ui_logindialog.h"
 #include "logindialog.h"
 #include "commanhelper.h"
@@ -19,22 +20,15 @@ logindialog::logindialog(QWidget *parent) :
     modbusDeviceLogin(nullptr)
 {
     ui->setupUi(this);
-
+    setWindowTitle("System Setting");
     // hide ?
     Qt::WindowFlags flags=Qt::Dialog;
     flags |=Qt::WindowCloseButtonHint;
     setWindowFlags(flags);
 
-    setTabOrder(ui->usernameLineEdit, ui->passwordLineEdit);
-
     ui->usernameLineEdit->setPlaceholderText("Username");
     ui->passwordLineEdit->setEchoMode(QLineEdit::Password);
     ui->passwordLineEdit->setPlaceholderText("Password");
-
-    ui->serialComBox->clear();
-
-    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
-       ui->serialComBox->addItem(info.portName());
 }
 
 logindialog::~logindialog()
@@ -75,6 +69,7 @@ void logindialog::ReadReady()
     reply->deleteLater();
 }
 
+#if 0
 void logindialog::on_loginPushButton_clicked()
 {
     modbusDeviceLogin = new QModbusRtuSerialMaster();
@@ -87,6 +82,8 @@ void logindialog::on_loginPushButton_clicked()
     QString name = ui->usernameLineEdit->text();
     QString password = ui->passwordLineEdit->text();
 
+    MainWindow *w = (MainWindow*) parentWidget();
+    w->setPortName(ui->serialComBox->currentText());
     if (modbusDeviceLogin == nullptr)
         QMessageBox::information(NULL, "Login", "Can not connect to device!");
 
@@ -127,6 +124,94 @@ void logindialog::on_loginPushButton_clicked()
         delete modbusDeviceLogin;
         ui->loginPushButton->setEnabled(true);
     }
+}
+#endif
+
+void logindialog::on_loginPushButton_clicked()
+{
+    QString str1 = ui->usernameLineEdit->text();
+    QString str2 = ui->passwordLineEdit->text();
+    QVector<quint16> values;
+
+    int i = 0;
+
+    // username
+    for (i = 0; i < str1.size(); i++) {
+        if ((i+1) % 2 == 0) {
+            quint16 temp = str1.at(i - 1).toLatin1();
+            temp = (temp << 8) + str1.at(i).toLatin1();
+            values.push_back(temp);
+        }
+    }
+
+    if (i % 2) {
+        quint16 temp = str1.at(i-1).toLatin1();
+        temp = temp << 8;
+        values.push_back(temp);
+        i++;
+    }
+
+    for (i = (i / 2); i < (AddrEntries/2); i++) {
+        values.push_back(0x0000);
+    }
+    // password
+    for (i = 0; i < str2.size(); i++) {
+        if ((i+1) % 2 == 0) {
+            quint16 temp = str2.at(i - 1).toLatin1();
+            temp = (temp << 8) + str2.at(i).toLatin1();
+            values.push_back(temp);
+        }
+    }
+
+    if (i % 2) {
+        quint16 temp = str2.at(i-1).toLatin1();
+        temp = temp << 8;
+        values.push_back(temp);
+        i++;
+    }
+
+    for (i = (i / 2); i < (AddrEntries/2); i++) {
+        values.push_back(0x0000);
+    }
+
+    MainWindow *w = (MainWindow*) parentWidget();
+    if (!w->modbusDevice)
+        w->modbusDevice = new QModbusRtuSerialMaster();
+
+    w->modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter, w->ui->portComboBox->currentText());
+    w->modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,QSerialPort::Baud9600);
+    w->modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,QSerialPort::Data8);
+    w->modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,QSerialPort::NoParity);
+    w->modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,QSerialPort::OneStop);
+    w->modbusDevice->connectDevice();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, LoginADDR, AddrEntries);
+
+    writeUnit.setValues(values);
+    if (auto *reply = w->modbusDevice->sendWriteRequest(writeUnit, 1)) {
+        if (!reply->isFinished()) {
+            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                MainWindow *w = (MainWindow*) parentWidget();
+
+                if (reply->error() == QModbusDevice::ProtocolError) {
+                    QMessageBox::information(NULL, "Reset", "Please Check Username and Password.");
+                } else if (reply->error() != QModbusDevice::NoError) {
+                    QMessageBox::information(NULL, "Reset", "Please Check Username and Password.");
+                } else if (reply->error() == QModbusDevice::NoError) {
+                    w->m_login_flag = 1;
+                    reply->deleteLater();
+                    close();
+                }
+            });
+        } else {
+            // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
+            // broadcast replies return immediately
+            reply->deleteLater();
+        }
+    } else {
+        // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
+    }
+    //mw->modbusDevice->connectDevice();
 }
 
 void logindialog::on_quitPushButton_clicked()

@@ -27,7 +27,10 @@ SOURCES += main.cpp\
     system.cpp \
     commanhelper.cpp \
     mbus_protocol.cpp \
-    mbus_protocol_aux.cpp
+    mbus_protocol_aux.cpp \
+    mbus_serial.cpp \
+    coap.cpp \
+    netmodel.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -47,7 +50,9 @@ HEADERS  += mainwindow.h \
     system.h \
     commanhelper.h \
     mbus_protocol.h \
-    mbus_protocol_aux.h
+    mbus_protocol_aux.h \
+    coap.h \
+    netmodel.h
 
 FORMS    += mainwindow.ui \
          settingsdialog.ui \

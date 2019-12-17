@@ -39,7 +39,7 @@ void MainWindow::on_voltageOutputPushButton_clicked()
     quint16 ADDR = voltageOutputAddr + channel;
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, IOEntries);
     quint16 voltageOutputValue = ui->voltageOutputLineEdit->text().toDouble();
-    if (voltageOutputValue > 10000) {
+    if (voltageOutputValue > 30000) {
         statusBar()->showMessage("Set Voltage Error: voltage output must less than 10000mv");
         return;
     }

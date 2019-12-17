@@ -7,5 +7,6 @@
         <file>images/log.png</file>
         <file>stylesheet.qss</file>
         <file>images/login.jpg</file>
+        <file>stylesheetblack.qss</file>
     </qresource>
 </RCC>

@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <stdlib.h>
+#include <QDialogButtonBox>
 
 systemDialog::systemDialog(QWidget *parent) :
     QDialog(parent),
@@ -19,8 +20,8 @@ systemDialog::systemDialog(QWidget *parent) :
     flags |=Qt::WindowCloseButtonHint;
     setWindowFlags(flags);
 
+    ui->systemReloadComboBox->hide();
 #ifdef MASTER
-    ui->gridLayout->setEnabled(true);
     ui->usernameLineEdit->setEnabled(true);
     ui->passwordLineEdit->setEnabled(true);
 #else
@@ -37,6 +38,8 @@ systemDialog::systemDialog(QWidget *parent) :
 
     ui->systemApply->setEnabled(false);
 #endif
+    ui->widget->setVisible(false);
+    this->setFixedSize(395, 175);
 }
 
 systemDialog::~systemDialog()
@@ -99,18 +102,32 @@ void systemDialog::on_systemSet_clicked()
     if (!modbusDevice)
         return;
 
+    QMessageBox::StandardButton result;
+    result = QMessageBox::information(NULL, "Reset", "WARN: It will reset the system to default setting value.", QMessageBox::Yes | QMessageBox::No);
+    if (result == QMessageBox::No)
+        return;
+
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ResetEnableAddress, ResetEntries);
-    quint16 currentOutputValue =  ui->systemReloadComboBox->currentIndex();
+    // quint16 currentOutputValue =  ui->systemReloadComboBox->currentIndex();
+    quint16 currentOutputValue = 1;
 
     writeUnit.setValue(0, currentOutputValue);
     if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, 1)) {
         if (!reply->isFinished()) {
             connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                MainWindow *mw = (MainWindow*) parentWidget();
                 if (reply->error() == QModbusDevice::ProtocolError) {
+
+                    mw->statusBar()->showMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+                        .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16),
+                        5000);
 
                 } else if (reply->error() != QModbusDevice::NoError) {
 
+                    mw->statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
+                        arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
                 }
+                mw->statusBar()->showMessage(tr("OK!"));
                 reply->deleteLater();
             });
         } else {
@@ -118,7 +135,7 @@ void systemDialog::on_systemSet_clicked()
             reply->deleteLater();
         }
     } else {
-
+        w->statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
     }
 }
 
@@ -198,12 +215,18 @@ void systemDialog::handle_read(int addr, int entry, void (systemDialog::*fp)())
 
 void systemDialog::on_systemApply_clicked()
 {
-    ui->systemApply->setEnabled(false);
     // change write twice to 1 time
     //handle_write(ui->usernameLineEdit, UsernameAddress, UsernameEntries);
     //CommanHelper::sleep(2000);
     //handle_write(ui->passwordLineEdit, PasswordAddress, PasswordEntries);
 
+    QMessageBox::StandardButton result;
+    result = QMessageBox::information(NULL, "Reset", "WARN: It will change the username and password for login.", QMessageBox::Yes | QMessageBox::No);
+    if (result == QMessageBox::No) {
+        return;
+    }
+
+    ui->systemApply->setEnabled(false);
     handle_write(UsernameAddress, UsernameEntries+PasswordEntries);
     ui->systemApply->setEnabled(true);
 }
@@ -268,19 +291,19 @@ void systemDialog::handle_write(int addr, int entry)
         if (!reply->isFinished()) {
             connect(reply, &QModbusReply::finished, this, [this, reply]() {
                 if (reply->error() == QModbusDevice::ProtocolError) {
-
+                    QMessageBox::information(NULL, "Reset", "Failed to Reset Username and Password.");
                 } else if (reply->error() != QModbusDevice::NoError) {
-
+                    QMessageBox::information(NULL, "Reset", "Failed to Reset Username and Password.");
                 }
-
                 reply->deleteLater();
             });
         } else {
+            QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
             // broadcast replies return immediately
             reply->deleteLater();
         }
     } else {
-
+        // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
     }
 }
 
@@ -292,13 +315,17 @@ void systemDialog::SNReadReady()
 
     if (reply->error() == QModbusDevice::NoError) {
         const QModbusDataUnit unit = reply->result();
+
+        if ((unit.value(0) >> 8 == 0xff))
+                return;
+
         QString s;
         for (uint i = 0; i < unit.valueCount(); i++) {
             if ((unit.value(i) >> 8) == 0x00)
                 break;
             s[2*i] = unit.value(i) >> 8;
 
-            if ((unit.value(i) & 0x00ff == 0x00)) {
+            if ((unit.value(i) & 0x00ff) == 0x00) {
                 break;
             }
             s[(2*i) +1] = unit.value(i) & 0x00ff;
@@ -328,5 +355,18 @@ void systemDialog::on_SNRead_clicked()
             delete reply; // broadcast replies return immediately
     } else {
 
+    }
+}
+
+void systemDialog::on_pushButton_clicked()
+{
+    if (ui->pushButton->text() == ">>>") {
+        this->setFixedSize(395,311);
+        ui->widget->setVisible(true);
+        ui->pushButton->setText("<<<");
+    } else if (ui->pushButton->text() == "<<<") {
+        this->setFixedSize(395,175);
+        ui->widget->setVisible(false);
+        ui->pushButton->setText(">>>");
     }
 }

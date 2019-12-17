@@ -54,16 +54,20 @@
 #include <QMainWindow>
 #include <QModbusDataUnit>
 #include "ui_mainwindow.h"
+#include "netmodel.h"
 #include <QStandardItemModel>
 #include <QtSerialPort/QtSerialPort>
 #include <QTime>
+#include <QTimer>
 
 // MACRO CRONTROL Area
-//#define TEST_DATA
-#define SKIN
+// #define TEST_DATA
+// #define SKIN
 // #define LOGIN
 // #define STORE
-#define ADMIN
+#define ACTION
+#define UtilityVersion "WoMaster End-Node Utility Login V0.5.0"
+// #define ADMIN
 
 QT_BEGIN_NAMESPACE
 
@@ -131,6 +135,9 @@ public:
     {
        return modbusDevice;
     }
+    void setPortName(QString port){
+        portName = port;
+    }
 private:
     void initActions();
     QModbusDataUnit readRequest() const;
@@ -139,16 +146,23 @@ private:
     void _sleep(unsigned int);
     void setModelName() const;
     void setIOChannel();
+    void setWidget();
     void handle_write(QLineEdit* , quint16);
+    void handle_write(QComboBox* , quint16);
+    void handle_write(QRadioButton* ,quint16);
     void handle_read(int addr, void (MainWindow::*fp)());
     void handle_read(int addr, int entry, void (MainWindow::*fp)());
     void handle_read_ready(QLineEdit* );
+    void handle_read_ready(QComboBox* );
     void nb_handle_write(QLineEdit*, int, int);
     void nb_handle_read_ready(QLineEdit* );
     void nbStatusFill(short, QLineEdit*);
     void mqttStatusFill(short, QLineEdit*);
-private slots:
+    void serialAlarmInit();
+public slots:
     void on_connectButton_clicked();
+
+private slots:
     void onStateChanged(int state);
     void modelNameReadReady();
     void currentReadReady();
@@ -162,6 +176,7 @@ private slots:
     void loraReadReady();
     void netIdReadReady();
     void serialReadReady();
+    void serialReadReady2();
     void on_connectType_currentIndexChanged(int);
     void on_loraSetButton_clicked();
     void on_loraGetButton_clicked();
@@ -178,6 +193,8 @@ private slots:
     void on_rvPshBtn_clicked();
     void on_serialBtn_clicked();
     void on_serialBtnRead_clicked();
+    void on_serialBtn_2_clicked();
+    void on_serialBtnRead_2_clicked();
     void on_pidButtonRead_clicked();
     void on_pidButtonWrite_clicked();
     void on_netSIDRead_clicked();
@@ -305,28 +322,46 @@ private slots:
     void on_intervalRead_clicked();
     void on_idWrite_2_clicked();
     void on_pushButton_3_clicked();
-
     void on_mbusSetReload_clicked();
-
     void on_nbApply_clicked();
-
     void on_nbReload_clicked();
-
     void on_mqttApply_clicked();
-
     void on_mqttReload_clicked();
+    void defaultTheme();
+    void darkTheme();
+    void on_nbModelRead_clicked();
+    void nbModelReadReady();
+    void on_nbModeWrite_clicked();
+
+    void on_coapApply_clicked();
+    void coapReadReady();
+    void on_coapReload_clicked();
+
+    void on_mqttApply_3_clicked();
+    void coapStatusReadReady();
+    void on_netBitMapClear_clicked();
+    void serialAlarmTask();
+
+    void on_abpEnable_clicked();
+    void on_otaaEnable_clicked();
 
 private:
-    Ui::MainWindow *ui;
     QModbusReply *lastRequest;
-    QModbusClient *modbusDevice;
     SettingsDialog *m_settingsDialog;
     logdialog *m_logdialog;
     systemDialog *m_system;
     WriteRegisterModel *writeModel;
     QStandardItemModel *m_Model;
-    QSerialPort *m_serial;
+    NetModel *m_pModel;
     QList<QStandardItem *> storageItems;
+    QString portName;
+    QTimer *serialAlarm;
+    QVector<QString> serialInfoVector;
+ public:
+     Ui::MainWindow *ui;
+     QModbusClient *modbusDevice;
+     QSerialPort *m_serial;
+     unsigned char m_login_flag;
 };
 
 #endif // MAINWINDOW_H

@@ -7,6 +7,7 @@
 #define netAESKeyAddr (119 - 1)
 #define netTimeOutAddr (150 - 1)
 #define SNAddr (142 - 1)
+#define loraWANEnable (257 -1)
 
 #define sourceIDEntries 1
 #define bitMapEntries 16

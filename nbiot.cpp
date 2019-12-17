@@ -174,6 +174,57 @@ void MainWindow::on_ipRead_clicked()
     handle_read(NBIPAddress, NBIPEntries, &ipReadReady);
 }
 
+void MainWindow::handle_read_ready(QComboBox* cb)
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        short entry = unit.value(0);
+        cb->setCurrentIndex(entry);
+        statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void MainWindow::nbModelReadReady()
+{
+    handle_read_ready(ui->nbmodelCombox);
+}
+
+void MainWindow::on_nbModelRead_clicked()
+{
+    handle_read(NBIoTModelAddress, &nbModelReadReady);
+}
+
+void MainWindow::handle_write(QComboBox *cb, quint16 add)
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, add, NBIoTEntries);
+    quint16 currentOutputValue =  cb->currentIndex();
+
+    writeUnit.setValue(0, currentOutputValue);
+    writeSingleHoldingRegister(writeUnit);
+}
+
+void MainWindow::on_nbModeWrite_clicked()
+{
+    handle_write(ui->nbmodelCombox, NBIoTModelAddress);
+}
+
 void MainWindow::on_nbApply_clicked()
 {
     ui->nbApply->setEnabled(false);
@@ -196,6 +247,10 @@ void MainWindow::on_nbApply_clicked()
         emit on_ipWrite_clicked();
         _sleep(2000);
     }
+
+    emit on_nbModeWrite_clicked();
+        _sleep(2000);
+
     ui->nbApply->setEnabled(true);
 }
 
