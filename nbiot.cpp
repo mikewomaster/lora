@@ -2,6 +2,7 @@
 #include <QModbusTcpClient>
 #include <QModbusRtuSerialMaster>
 #include <QDebug>
+#include <QMessageBox>
 
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
@@ -182,7 +183,7 @@ void MainWindow::handle_read_ready(QComboBox* cb)
 
     if (reply->error() == QModbusDevice::NoError) {
         const QModbusDataUnit unit = reply->result();
-        short entry = unit.value(0);
+        int entry = unit.value(0);
         cb->setCurrentIndex(entry);
         statusBar()->showMessage(tr("OK!"));
     } else if (reply->error() == QModbusDevice::ProtocolError) {
@@ -266,5 +267,7 @@ void MainWindow::on_nbReload_clicked()
     emit on_ipRead_clicked();
     _sleep(2000);
     emit on_nbStatusRead_clicked();
+    _sleep(2000);
+    emit on_nbModelRead_clicked();
     ui->nbReload->setEnabled(true);
 }

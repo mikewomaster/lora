@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>sensor_edit</class>
+ <widget class="QDialog" name="sensor_edit">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>429</width>
+    <height>500</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QGroupBox" name="RTUSensor">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>391</width>
+     <height>471</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>RTU Sensor Configuration</string>
+   </property>
+   <widget class="QPushButton" name="sensorAddPushButton">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>420</y>
+      <width>75</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Add</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>30</y>
+      <width>301</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_27">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Sensor Type:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1" colspan="2">
+      <widget class="QComboBox" name="sensorTypeCombox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <item>
+        <property name="text">
+         <string>ES101-LL</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>IS101-FL-NB-BT8</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-NL</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>WS102-BRM</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>WS102-CL</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>WS102-ORP</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>WS102-DOS</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>WS102-PH</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-NO2-2000</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-NO-2000</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-PM</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-CO2-5000</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-SO2-2000</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-O3</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-CO-2000</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-RG</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-WD</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-WS</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES101-AT</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES102-TH</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ES104</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Slave ID:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1" colspan="2">
+      <widget class="QLineEdit" name="sensorSlaveId">
+       <property name="placeholderText">
+        <string>1</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QLabel" name="label_191">
+       <property name="text">
+        <string>PLC Address:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QLineEdit" name="sensorPLCAddress">
+       <property name="placeholderText">
+        <string>40001</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

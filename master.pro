@@ -30,7 +30,14 @@ SOURCES += main.cpp\
     mbus_protocol_aux.cpp \
     mbus_serial.cpp \
     coap.cpp \
-    netmodel.cpp
+    netmodel.cpp \
+    dlms.cpp \
+    dlms_model.cpp \
+    sensor.cpp \
+    sensormodel.cpp \
+    sensor_edit.cpp \
+    obisview.cpp \
+    obis_edit.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -52,13 +59,20 @@ HEADERS  += mainwindow.h \
     mbus_protocol.h \
     mbus_protocol_aux.h \
     coap.h \
-    netmodel.h
+    netmodel.h \
+    dlms.h \
+    dlms_model.h \
+    sensor.h \
+    sensor_edit.h \
+    obis_edit.h
 
 FORMS    += mainwindow.ui \
          settingsdialog.ui \
     logdialog.ui \
     logindialog.ui \
-    system.ui
+    system.ui \
+    sensor_edit.ui \
+    obis_edit.ui
 
 RESOURCES += \
     master.qrc

@@ -53,12 +53,18 @@
 
 #include <QMainWindow>
 #include <QModbusDataUnit>
-#include "ui_mainwindow.h"
-#include "netmodel.h"
 #include <QStandardItemModel>
 #include <QtSerialPort/QtSerialPort>
 #include <QTime>
 #include <QTimer>
+#include <QPaintDevice>
+
+#include "sensor_edit.h"
+#include "ui_mainwindow.h"
+#include "netmodel.h"
+#include "dlms_model.h"
+#include "sensor.h"
+#include "obis_edit.h"
 
 // MACRO CRONTROL Area
 // #define TEST_DATA
@@ -66,7 +72,8 @@
 // #define LOGIN
 // #define STORE
 #define ACTION
-#define UtilityVersion "WoMaster End-Node Utility Login V0.5.0"
+#define UtilityVersion "WoMaster End-Node Utility V0.5.3"
+// #define LAUNCH
 // #define ADMIN
 
 QT_BEGIN_NAMESPACE
@@ -159,6 +166,11 @@ private:
     void nbStatusFill(short, QLineEdit*);
     void mqttStatusFill(short, QLineEdit*);
     void serialAlarmInit();
+    void sensorAddModbus(sen, int);
+    void sensor_view_model();
+    void obis_view_model_init();
+    void CoapSetReadOne();
+    void CoapSetReadTwo();
 public slots:
     void on_connectButton_clicked();
 
@@ -332,36 +344,71 @@ private slots:
     void on_nbModelRead_clicked();
     void nbModelReadReady();
     void on_nbModeWrite_clicked();
-
     void on_coapApply_clicked();
     void coapReadReady();
     void on_coapReload_clicked();
-
     void on_mqttApply_3_clicked();
     void coapStatusReadReady();
     void on_netBitMapClear_clicked();
     void serialAlarmTask();
-
     void on_abpEnable_clicked();
     void on_otaaEnable_clicked();
+    void on_dlmsApply_clicked();
+    void on_dlmsReload_clicked();
+    void dlmsReadReady();
+    void dlmsChkReadReady();
+    void on_dlmsChk_clicked();
+    void on_dlmsAuth_currentIndexChanged(int index);
+    void slotContextMent(QPoint pos);
+    void modelEdit();
+    void obis_del();
+    void on_sensorAddPushButton_clicked();
+    void on_sensorUpdatePushButton_clicked();
+    void sensorCheckReadReady();
+    void on_sensorCheckPushButton_clicked();
+    void on_sensorClearPushButton_clicked();
+    void sensorUpdateReadReady();
+    void sensMensu(QPoint pos);
+    void sensEdit();
+    void sensDelete();
+    void on_obisReload_clicked();
+    void on_obisAdd_clicked();
+    void obisUpdatReadReady();
+    void on_dtlsApply_clicked();
+    void coapReadTwoReady();
+    void coapReadOneReady();
+    void on_dtlsReload_clicked();
+    void coapDtlsChkReadReady();
+    void on_dtlsChekPushButton_clicked();
 
 private:
     QModbusReply *lastRequest;
     SettingsDialog *m_settingsDialog;
     logdialog *m_logdialog;
     systemDialog *m_system;
+    obis_edit* m_obis_edit_dialog;
     WriteRegisterModel *writeModel;
     QStandardItemModel *m_Model;
     NetModel *m_pModel;
+    sensor *m_sensorModel;
     QList<QStandardItem *> storageItems;
     QString portName;
     QTimer *serialAlarm;
     QVector<QString> serialInfoVector;
+    QMenu *popMenu;
+    QMenu *senpopMenu;
+    bool sensorFlag;
+    sensor_edit* m_sensor_dialog;
  public:
      Ui::MainWindow *ui;
      QModbusClient *modbusDevice;
      QSerialPort *m_serial;
      unsigned char m_login_flag;
+     bool sensor_edit_flag;
+     bool obis_edit_flag;
+     QList<Dlms> dlmsRecordList;
+     QList<sen> sensorRecordList;
+     dlmsModel *m_pdlmsModel;
 };
 
 #endif // MAINWINDOW_H

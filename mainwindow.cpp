@@ -66,6 +66,7 @@
 #include <QDebug>
 #include <QTime>
 #include <QSize>
+#include <QDebug>
 
 enum ModbusConnection {
     Serial,
@@ -89,12 +90,19 @@ MainWindow::MainWindow(QWidget *parent)
     m_settingsDialog = new SettingsDialog(this);
     m_logdialog = new logdialog(this);
     m_system = new systemDialog(this);
+    m_sensor_dialog = new sensor_edit(this);
+    m_obis_edit_dialog = new obis_edit(this);
+
     initActions();
 
     writeModel = new WriteRegisterModel(this);
 
     ui->connectType->setCurrentIndex(0);
     on_connectType_currentIndexChanged(0);
+
+    sensorFlag = false;
+    sensor_edit_flag = false;
+    obis_edit_flag = false;
 
     foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts()) {
         serialInfoVector.push_back(info.portName());
@@ -119,12 +127,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->syncWordLineEdit->hide();
     ui->OptimizeLowRateComboBox->hide();
 
-
     ui->tabWidget->setTabEnabled(6, false);
     ui->groupBox_6->hide();
 
-    ui->tabWidget->show();
-    ui->tabWidget_2->hide();
+    ui->tabWidget_2->show();
+    ui->tabWidget->hide();
 
     ui->groupBox_13->hide();
     ui->mbusRegister->hide();
@@ -254,7 +261,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->netBitMapTableView->setModel(m_pModel);
 
     ui->coapInterval->hide();
+    ui->dlmsPwd->setEnabled(false);
 
+    // dlms table view with dlmsModel
+    obis_view_model_init();
+
+    // sensor view and sensor model init
+    sensor_view_model();
+
+    // mbus model init
     QList<Device> recordList;
     for (int i = 1; i <= 250; ++i)
     {
@@ -431,7 +446,7 @@ void MainWindow::setIOChannel()
 void MainWindow::setWidget()
 {
     QString s = ui->portEdit_3->text();
-    qDebug() << s;
+
     if (s.contains("SCB")){
         ui->tabWidget->hide();
         ui->tabWidget_2->show();
@@ -444,8 +459,19 @@ void MainWindow::setWidget()
     }else if (s.contains("LR")){
         ui->tabWidget->setTabEnabled(1, false);
         ui->tabWidget->setTabEnabled(4, false);
+    }else if (s.contains("DL")){
+        ui->tabWidget_2->setTabEnabled(4, false);
+        ui->tabWidget_2->setTabEnabled(5, false);
+        ui->tabWidget_2->setTabEnabled(6, false);
     }
+
+    ui->tabWidget_2->setTabEnabled(4, false);
+    ui->tabWidget_2->setTabEnabled(5, false);
+    ui->tabWidget_2->setTabEnabled(6, false);
+
     ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+    ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+    update();
 }
 
 void MainWindow::on_connectButton_clicked()
@@ -459,8 +485,31 @@ void MainWindow::on_connectButton_clicked()
             modbusDevice->disconnectDevice();
             ui->actionConnect->setEnabled(true);
             ui->actionDisconnect->setEnabled(false);
+
+            QString s = ui->portEdit_3->text();
+
+            if (s.contains("LM")) {
+                ui->tabWidget->setTabEnabled(3, true);
+                ui->tabWidget->setTabEnabled(4, true);
+            }else if (s.contains("LC")){
+                ui->tabWidget->setTabEnabled(3, true);
+            }else if (s.contains("LR")){
+                ui->tabWidget->setTabEnabled(1, true);
+                ui->tabWidget->setTabEnabled(4, true);
+            } else if (s.contains("DL")){
+                // ui->tabWidget_2->setTabEnabled(4, true);
+                // ui->tabWidget_2->setTabEnabled(5, true);
+                // ui->tabWidget_2->setTabEnabled(6, true);
+            }
+
+            ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+            ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
             ui->portEdit_3->clear();
+
+            update(); // repaint
+
             m_login_flag = 0;
+            sensorFlag = false;
      } else {
         logindialog *log = new logindialog(this);
         log->show();

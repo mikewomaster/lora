@@ -221,7 +221,7 @@ void systemDialog::on_systemApply_clicked()
     //handle_write(ui->passwordLineEdit, PasswordAddress, PasswordEntries);
 
     QMessageBox::StandardButton result;
-    result = QMessageBox::information(NULL, "Reset", "WARN: It will change the username and password for login.", QMessageBox::Yes | QMessageBox::No);
+    result = QMessageBox::information(NULL, "", "WARN: It will change the username and password for login.", QMessageBox::Yes | QMessageBox::No);
     if (result == QMessageBox::No) {
         return;
     }
@@ -291,19 +291,19 @@ void systemDialog::handle_write(int addr, int entry)
         if (!reply->isFinished()) {
             connect(reply, &QModbusReply::finished, this, [this, reply]() {
                 if (reply->error() == QModbusDevice::ProtocolError) {
-                    QMessageBox::information(NULL, "Reset", "Failed to Reset Username and Password.");
+                    QMessageBox::information(NULL, "", "Failed to Reset Username and Password.");
                 } else if (reply->error() != QModbusDevice::NoError) {
-                    QMessageBox::information(NULL, "Reset", "Failed to Reset Username and Password.");
+                    QMessageBox::information(NULL, "", "Failed to Reset Username and Password.");
                 }
                 reply->deleteLater();
             });
         } else {
-            QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
+            QMessageBox::information(NULL, "", "Successed to Reset Username and Password.");
             // broadcast replies return immediately
             reply->deleteLater();
         }
     } else {
-        // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
+        // QMessageBox::information(NULL, "", "Successed to Reset Username and Password.");
     }
 }
 

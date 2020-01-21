@@ -192,11 +192,20 @@ void logindialog::on_loginPushButton_clicked()
         if (!reply->isFinished()) {
             connect(reply, &QModbusReply::finished, this, [this, reply]() {
                 MainWindow *w = (MainWindow*) parentWidget();
-
                 if (reply->error() == QModbusDevice::ProtocolError) {
-                    QMessageBox::information(NULL, "Reset", "Please Check Username and Password.");
+#ifdef LAUNCH
+                    w->m_login_flag = 1;
+                    reply->deleteLater();
+                    close();
+#endif
+                    QMessageBox::information(NULL, "Login", "Please Check Username and Password.");
                 } else if (reply->error() != QModbusDevice::NoError) {
-                    QMessageBox::information(NULL, "Reset", "Please Check Username and Password.");
+#ifdef LAUNCH
+                    w->m_login_flag = 1;
+                    reply->deleteLater();
+                    close();
+#endif
+                    QMessageBox::information(NULL, "Login", "Please Check Username and Password.");
                 } else if (reply->error() == QModbusDevice::NoError) {
                     w->m_login_flag = 1;
                     reply->deleteLater();

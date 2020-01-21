@@ -12,6 +12,11 @@ QMenu::item{
     font-size: 16px;
 }
 
+QMenu::item:selected {
+    border-color: dodgerblue;
+    background: dodgerblue;
+}
+
 QTabBar::tab:disabled {
     width: 0;
     color: transparent;
