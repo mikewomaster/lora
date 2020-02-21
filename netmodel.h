@@ -5,7 +5,6 @@
 #include <QAbstractTableModel>
 
 typedef struct Device{
-    QString devDesc;
     int id;
     bool bChecked;
 }Device;

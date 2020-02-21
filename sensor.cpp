@@ -9,7 +9,7 @@
 #define SENSORTYPE 0
 #define SENSORID 1
 #define SENSORREGADDR 2
-#define SENSORVALUE 3
+#define SENSORLENGTH 3
 #define SENSORSEQ 4
 
 #define SENSORNUM (50 - 1)
@@ -44,16 +44,16 @@ QVariant sensor::headerData(int section, Qt::Orientation orientation, int role) 
             if (orientation == Qt::Horizontal)
             {
                 if (section == SENSORTYPE)
-                    return QStringLiteral("Sensor Type");
+                    return QStringLiteral("RTU Name");
 
                 if (section == SENSORID)
                     return QStringLiteral("Modbus Slave ID");
 
                 if (section == SENSORREGADDR)
-                    return QStringLiteral("PLC Address");
+                    return QStringLiteral("Start Address");
 
-                if (section == SENSORVALUE)
-                    return QStringLiteral("Sensor Value");
+                if (section == SENSORLENGTH)
+                    return QStringLiteral("Length");
 
                 if (section == SENSORSEQ)
                     return QStringLiteral("Seqeuence Debug");
@@ -72,8 +72,8 @@ Qt::ItemFlags sensor::flags(const QModelIndex &index) const
 
     int nColumn = index.column();
     Qt::ItemFlags flags;
-    if (nColumn != SENSORVALUE)
-        flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+    if (nColumn != SENSORLENGTH)
+        flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
     else
         flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 
@@ -101,8 +101,8 @@ QVariant sensor::data(const QModelIndex &index, int role) const
                     return record.id;
                 if (nColumn == SENSORREGADDR)
                     return record.reg_addr;
-                if (nColumn == SENSORVALUE)
-                    return record.value;
+                if (nColumn == SENSORLENGTH)
+                    return record.len;
                 if (nColumn == SENSORSEQ)
                     return record.seq;
 

@@ -5,10 +5,13 @@
 #include <QAbstractTableModel>
 
 #define RTUSENSORADDR (501 - 1)
-#define RTUSENSORNUM 3
+#define RTUSENSORNUM 7
 
 #define RTUSENSORVALUE (701 - 1)
 #define RTUVALUEENTRIES 50
+
+#define RTUSENSORCLOCK  (801 - 1)
+#define RTUSENSORINTERVAL (803 - 1)
 
 static const QStringList sl ={
       "",
@@ -41,6 +44,7 @@ typedef struct sen{
     short type_;
     short id;
     int reg_addr;
+    short len;
     int seq;
     bool used;
 }sen;

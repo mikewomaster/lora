@@ -72,9 +72,10 @@
 // #define LOGIN
 // #define STORE
 #define ACTION
-#define UtilityVersion "WoMaster End-Node Utility V0.5.3"
-// #define LAUNCH
-// #define ADMIN
+#define UtilityVersion "WoMaster End-Node Utility V0.5.7"
+#define LAUNCH
+#define ADMIN
+#define LORA
 
 QT_BEGIN_NAMESPACE
 
@@ -154,6 +155,7 @@ private:
     void setModelName() const;
     void setIOChannel();
     void setWidget();
+    void setWidgetLoRa();
     void handle_write(QLineEdit* , quint16);
     void handle_write(QComboBox* , quint16);
     void handle_write(QRadioButton* ,quint16);
@@ -171,6 +173,10 @@ private:
     void obis_view_model_init();
     void CoapSetReadOne();
     void CoapSetReadTwo();
+    void setClock(quint32*);
+    void checkBoxClear();
+    void setCheckBoxLow(quint16);
+    void setCheckBoxHigh(quint16);
 public slots:
     void on_connectButton_clicked();
 
@@ -380,6 +386,12 @@ private slots:
     void on_dtlsReload_clicked();
     void coapDtlsChkReadReady();
     void on_dtlsChekPushButton_clicked();
+    void sensorIntervalReadReady();
+    void on_sensorIntervalCheckPushButton_clicked();
+    void on_sensorIntervalSetPushButton_clicked();
+    void sensorTimeReadReady();
+    void on_sensorTimeCheckPushButton_clicked();
+    void on_sensorTimeSetPushButton_clicked();
 
 private:
     QModbusReply *lastRequest;

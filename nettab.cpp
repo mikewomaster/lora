@@ -376,7 +376,6 @@ void MainWindow::on_netBitMapRead_clicked()
     }
 }
 
-
 void MainWindow::on_netBitMapWrite_clicked()
 {
     // QString text = ui->BitMapTextEdit->toPlainText();

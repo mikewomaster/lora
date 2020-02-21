@@ -3,8 +3,7 @@
 
 #define CHECK_BOX_COLUMN 0
 #define ID_COLUMN 1
-#define File_PATH_COLUMN 2
-
+// #define File_PATH_COLUMN 2
 
 NetModel::NetModel(QObject *parent)
     : QAbstractTableModel(parent)
@@ -22,12 +21,11 @@ void NetModel::updateData(QList<Device> recordList)
 void NetModel::clearDate()
 {
     QList<Device> recordList;
-    for (int i = 1; i <= 0xff; ++i)
+    for (int i = 1; i <= 0xfa; ++i)
     {
         Device record;
         record.bChecked = false;
         record.id = i;
-        record.devDesc = "";
         recordList.append(record);
     }
     updateData(recordList);
@@ -44,7 +42,7 @@ int NetModel::rowCount(const QModelIndex &parent) const
 int NetModel::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return 3;
+    return 2;
 }
 
 // 设置表格项数据
@@ -59,13 +57,15 @@ bool NetModel::setData(const QModelIndex &index, const QVariant &value, int role
     {
     case Qt::EditRole:
     {
-        if (nColumn == File_PATH_COLUMN)
-        {
-            record.devDesc = value.toString();
-            m_recordList.replace(index.row(), record);
-            emit dataChanged(index, index);
-            return true;
-        }
+        /*
+            if (nColumn == File_PATH_COLUMN)
+            {
+                record.devDesc = value.toString();
+                m_recordList.replace(index.row(), record);
+                emit dataChanged(index, index);
+                return true;
+            }
+        */
     }
     case Qt::CheckStateRole:
     {
@@ -100,8 +100,8 @@ QVariant NetModel::data(const QModelIndex &index, int role) const
         return QVariant(Qt::AlignLeft | Qt::AlignVCenter);
     case Qt::DisplayRole:
     {
-        if (nColumn == File_PATH_COLUMN)
-            return record.devDesc;
+        //if (nColumn == File_PATH_COLUMN)
+          //  return record.devDesc;
         if (nColumn == ID_COLUMN)
             return record.id;
         return "";
@@ -136,8 +136,8 @@ QVariant NetModel::headerData(int section, Qt::Orientation orientation, int role
                 if (section == ID_COLUMN)
                     return QStringLiteral("ID");
 
-                if (section == File_PATH_COLUMN)
-                    return QStringLiteral("Description");
+                // if (section == File_PATH_COLUMN)
+                //     return QStringLiteral("Description");
             }
         }
         default:

@@ -67,6 +67,7 @@
 #include <QTime>
 #include <QSize>
 #include <QDebug>
+#include <QMessageBox>
 
 enum ModbusConnection {
     Serial,
@@ -130,8 +131,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget->setTabEnabled(6, false);
     ui->groupBox_6->hide();
 
+#ifdef LORA
+    ui->tabWidget->show();
+    ui->tabWidget_2->hide();
+#else
     ui->tabWidget_2->show();
     ui->tabWidget->hide();
+#endif
 
     ui->groupBox_13->hide();
     ui->mbusRegister->hide();
@@ -246,6 +252,10 @@ MainWindow::MainWindow(QWidget *parent)
     widgetAdjust->setLayout(windowLayoutAdjust);
 #endif
 
+    // sensor Check Push Button
+    ui->sensorCheckPushButton->setVisible(false);
+    ui->sensorTypeCombox->setVisible(false);
+
     // nb
     ui->nbModelRead->hide();
     ui->nbModeWrite->hide();
@@ -259,6 +269,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->netBitMapTableView->setFrameShape(QFrame::NoFrame);
     ui->netBitMapTableView->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->netBitMapTableView->setModel(m_pModel);
+    ui->netBitMapTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     ui->coapInterval->hide();
     ui->dlmsPwd->setEnabled(false);
@@ -276,7 +287,6 @@ MainWindow::MainWindow(QWidget *parent)
         Device record;
         record.bChecked = false;
         record.id = i;
-        record.devDesc = "";
         recordList.append(record);
     }
     m_pModel->updateData(recordList);
@@ -406,8 +416,10 @@ void MainWindow::setModelName() const
 
 void MainWindow::setIOChannel()
 {
-    _sleep(3000);
-    QString modelName = ui->portEdit_3->text();
+    do {
+        _sleep(10);
+    }while(ui->portEdit_3->text() == "");
+    QString modelName =  ui->portEdit_3->text();
 
     ui->currentInputComboBox->clear();
     ui->currentOutputComboBox->clear();
@@ -443,6 +455,29 @@ void MainWindow::setIOChannel()
     }
 }
 
+void MainWindow::setWidgetLoRa()
+{
+    QString s = ui->portEdit_3->text();
+
+    if (s.contains("LM")) {
+        ui->tabWidget->setTabEnabled(3, false);
+        ui->tabWidget->setTabEnabled(4, false);
+        ui->tabWidget->setTabEnabled(7, false);
+
+        ui->netSIDRead->setEnabled(false);
+        ui->netSIDWrite->setEnabled(false);
+    }else if (s.contains("LC")) {
+        ui->tabWidget->setTabEnabled(3, false);
+        ui->tabWidget->setTabEnabled(7, false);
+    }else if (s.contains("LR")) {
+        ui->tabWidget->setTabEnabled(1, false);
+        ui->tabWidget->setTabEnabled(4, false);
+    }
+
+    ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+    update();
+}
+
 void MainWindow::setWidget()
 {
     QString s = ui->portEdit_3->text();
@@ -450,15 +485,6 @@ void MainWindow::setWidget()
     if (s.contains("SCB")){
         ui->tabWidget->hide();
         ui->tabWidget_2->show();
-    }
-    else if (s.contains("LM")) {
-        ui->tabWidget->setTabEnabled(3, false);
-        ui->tabWidget->setTabEnabled(4, false);
-    }else if (s.contains("LC")){
-        ui->tabWidget->setTabEnabled(3, false);
-    }else if (s.contains("LR")){
-        ui->tabWidget->setTabEnabled(1, false);
-        ui->tabWidget->setTabEnabled(4, false);
     }else if (s.contains("DL")){
         ui->tabWidget_2->setTabEnabled(4, false);
         ui->tabWidget_2->setTabEnabled(5, false);
@@ -469,7 +495,6 @@ void MainWindow::setWidget()
     ui->tabWidget_2->setTabEnabled(5, false);
     ui->tabWidget_2->setTabEnabled(6, false);
 
-    ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
     ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
     update();
 }
@@ -553,7 +578,12 @@ void MainWindow::on_connectButton_clicked()
 
     setModelName();
     setIOChannel();
+#ifdef LORA
+    setWidgetLoRa();
+#elif
     setWidget();
+#endif
+
 }
 
 void MainWindow::onStateChanged(int state)
