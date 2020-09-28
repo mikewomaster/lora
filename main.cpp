@@ -49,7 +49,6 @@
 ****************************************************************************/
 
 #include "mainwindow.h"
-
 #include <QApplication>
 #include <QLoggingCategory>
 #include <QFile>

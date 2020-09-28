@@ -2,6 +2,7 @@
 #include <QModbusTcpClient>
 #include <QModbusRtuSerialMaster>
 #include <QDebug>
+#include <QMessageBox>
 
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
@@ -16,7 +17,6 @@ void MainWindow::loraReadReady()
             const QModbusDataUnit unit = reply->result();
 
             double freq = unit.value(0) / 10.0;
-            qDebug() << freq;
             ui->FrequencyComboBox->setCurrentText(QString::number(freq,'g',4));
 
             quint32 rf = unit.value(1);
@@ -86,8 +86,27 @@ void MainWindow::on_loraSetButton_clicked()
 
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, LoraModbusStartAddr, LoraModbusEntries);
 
-    int freq = (ui->FrequencyComboBox->currentText().toDouble())*10;
+    double freq = (ui->FrequencyComboBox->currentText().toDouble())*10;
+    if (freq > 9300 || freq < 4100) {
+        QMessageBox::information(NULL, "LoRa", "Please Set LoRa Frequency range: 410MHz ~ 930MHz.");
+        return;
+    } else if (frequency == freq400 && (freq > 4930 || freq < 4100) ) {
+        QMessageBox::information(NULL, "LoRa", "Please Set LoRa Frequency range: 410MHz ~ 493MHz.");
+        return;
+    } else if (frequency == freq800 && (freq < 8500 || freq > 9300)) {
+        QMessageBox::information(NULL, "LoRa", "Please Set LoRa Frequency range: 850MHz ~ 930MHz.");
+        return;
+    } else if (frequency == freqTH && (freq < 9200 || freq > 9250)) {
+        QMessageBox::information(NULL, "LoRa", "Please Set LoRa Frequency range: 920MHz ~ 925MHz.");
+        return;
+    }
+
     int rf = ui->RFPowerComboBox->currentText().toFloat();
+    if (frequency == freqTH && rf > 17) {
+        QMessageBox::information(NULL, "LoRa", "Please Set LoRa Tx(RF) Power range: 14dBm ~ 17dBm.");
+        return;
+    }
+
     int sf = ui->SFComboBox->currentIndex();
     int bandwidth = ui->BandwidthComboBox->currentIndex();
     int cr = ui->CodeRateComboBox->currentIndex() + 1;
@@ -116,8 +135,9 @@ void MainWindow::on_loraSetButton_clicked()
                 } else if (reply->error() != QModbusDevice::NoError) {
                     statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
                         arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
+                } else {
+                    statusBar()->showMessage(tr("OK!"));
                 }
-                statusBar()->showMessage(tr("OK!"));
                 reply->deleteLater();
             });
         } else {

@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <QTime>
 #include <QPalette>
+#include <QCloseEvent>
+
 #include "mainwindow.h"
 #include "ui_logindialog.h"
 #include "logindialog.h"
@@ -22,9 +24,10 @@ logindialog::logindialog(QWidget *parent) :
     ui->setupUi(this);
     setWindowTitle("System Setting");
     // hide ?
-    Qt::WindowFlags flags=Qt::Dialog;
-    flags |=Qt::WindowCloseButtonHint;
+    Qt::WindowFlags flags = Qt::Dialog;
+    flags |= Qt::WindowCloseButtonHint;
     setWindowFlags(flags);
+    // setWindowFlags(windowFlags()|Qt::WindowContextHelpButtonHint|Qt::WindowTitleHint|Qt::WindowCloseButtonHint);
 
     ui->usernameLineEdit->setPlaceholderText("Username");
     ui->passwordLineEdit->setEchoMode(QLineEdit::Password);
@@ -33,7 +36,15 @@ logindialog::logindialog(QWidget *parent) :
 
 logindialog::~logindialog()
 {
+    delete modbusDeviceLogin;
     delete ui;
+}
+
+void logindialog::closeEvent(QCloseEvent *event)
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    w->m_login_flag_2 = 1;
+    event->accept();
 }
 
 void logindialog::ReadReady()
@@ -127,6 +138,8 @@ void logindialog::on_loginPushButton_clicked()
 }
 #endif
 
+// #define LAUNCH
+
 void logindialog::on_loginPushButton_clicked()
 {
     QString str1 = ui->usernameLineEdit->text();
@@ -193,6 +206,7 @@ void logindialog::on_loginPushButton_clicked()
             connect(reply, &QModbusReply::finished, this, [this, reply]() {
                 MainWindow *w = (MainWindow*) parentWidget();
                 if (reply->error() == QModbusDevice::ProtocolError) {
+                   w->modbusDevice->disconnectDevice();
 #ifdef LAUNCH
                     w->m_login_flag = 1;
                     reply->deleteLater();
@@ -200,6 +214,7 @@ void logindialog::on_loginPushButton_clicked()
 #endif
                     QMessageBox::information(NULL, "Login", "Please Check Username and Password.");
                 } else if (reply->error() != QModbusDevice::NoError) {
+                   w->modbusDevice->disconnectDevice();
 #ifdef LAUNCH
                     w->m_login_flag = 1;
                     reply->deleteLater();
@@ -213,11 +228,13 @@ void logindialog::on_loginPushButton_clicked()
                 }
             });
         } else {
+            w->modbusDevice->disconnectDevice();
             // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
             // broadcast replies return immediately
             reply->deleteLater();
         }
     } else {
+        w->modbusDevice->disconnectDevice();
         // QMessageBox::information(NULL, "Reset", "Successed to Reset Username and Password.");
     }
     //mw->modbusDevice->connectDevice();
@@ -225,5 +242,7 @@ void logindialog::on_loginPushButton_clicked()
 
 void logindialog::on_quitPushButton_clicked()
 {
+    MainWindow *w = (MainWindow*) parentWidget();
+    w->m_login_flag_2 = 1;
     close();
 }

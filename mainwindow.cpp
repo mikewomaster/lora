@@ -82,6 +82,10 @@ MainWindow::MainWindow(QWidget *parent)
     , m_Model(new QStandardItemModel())
     , m_serial(new QSerialPort)
     , m_login_flag(0)
+    , m_login_flag_2(0)
+    , frequency(0)
+    , monitorAlarm(nullptr)
+    , m_ymodem(new ymodem())
 {
     ui->setupUi(this);
 
@@ -129,6 +133,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->OptimizeLowRateComboBox->hide();
 
     ui->tabWidget->setTabEnabled(6, false);
+    // ui->tabWidget->setTabEnabled(8, false);
+    // ui->tabWidget->setTabEnabled(9, false);
     ui->groupBox_6->hide();
 
 #ifdef LORA
@@ -262,14 +268,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->BitMapTextEdit->hide();
 
-    // table view
-    m_pModel = new NetModel(nullptr);
-    ui->netBitMapTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->netBitMapTableView->setShowGrid(false);
-    ui->netBitMapTableView->setFrameShape(QFrame::NoFrame);
-    ui->netBitMapTableView->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->netBitMapTableView->setModel(m_pModel);
-    ui->netBitMapTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    // group net table view
+    groupNetViewModel();
 
     ui->coapInterval->hide();
     ui->dlmsPwd->setEnabled(false);
@@ -279,19 +279,25 @@ MainWindow::MainWindow(QWidget *parent)
 
     // sensor view and sensor model init
     sensor_view_model();
-
-    // mbus model init
-    QList<Device> recordList;
-    for (int i = 1; i <= 250; ++i)
-    {
-        Device record;
-        record.bChecked = false;
-        record.id = i;
-        recordList.append(record);
-    }
-    m_pModel->updateData(recordList);
+    ruleChainViewModel();
+    ruleChainMonitorViewModel();
+    eventMVC();
 
     serialAlarmInit();
+    for (int i = 1; i <= 250; i++ ) {
+        ui->ruleInDeviceIDComboBox->addItem(QString::number(i));
+        ui->ruleOutIDComboBox->addItem(QString::number(i));
+    }
+
+    for (int i = 0; i < 8; i++) {
+        ui->ruleInChComboBox->addItem(QString::number(i));
+        ui->ruleOutChnComboBox->addItem(QString::number(i));
+    }
+
+    // insertValueModule();
+    // insertMonitorValueModule();
+
+    ui->ELogChkPushButton->setEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -303,8 +309,263 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::eventMVC()
+{
+    eLModel = new eventLogModel(this);
+
+    ui->EventLogView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->EventLogView->setShowGrid(true);
+    ui->EventLogView->setFrameShape(QFrame::Box);
+    ui->EventLogView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->EventLogView->setModel(eLModel);
+    ui->EventLogView->setSortingEnabled(true);
+    ui->EventLogView->setColumnWidth(0, 170);
+    ui->EventLogView->setColumnWidth(1, 170);
+    ui->EventLogView->setColumnWidth(2, 100);
+    ui->EventLogView->setColumnWidth(3, 170);
+    ui->EventLogView->setColumnWidth(4, 170);
+    ui->EventLogView->setColumnWidth(5, 230);
+    ui->EventLogView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    eventLogList.clear();
+    eventLogData record;
+    for (int i = 0; i < 1000; i++) {
+        record.tag = "";
+        record.valueInput = 0;
+        record.type = 0;
+        record.valueOutput = 0;
+        record.timestamp = 0;
+        record.res = 0;
+        record.sequence = i;
+        eventLogList.append(record);
+    }
+    eLModel->updateData(eventLogList);
+
+    for (int i = 0; i < 1000; i++) {
+        if (record.tag == "")
+            ui->EventLogView->setRowHidden(i, true);
+    }
+}
+
+void MainWindow::ruleChainMonitorViewModel()
+{
+    m_RuleMonitorModel = new ruleMonitor(this);
+
+    ui->MonitorView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->MonitorView->setShowGrid(true);
+    ui->MonitorView->setFrameShape(QFrame::Box);
+    ui->MonitorView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->MonitorView->setModel(m_RuleMonitorModel);
+    ui->MonitorView->setColumnWidth(0, 170);
+    ui->MonitorView->setColumnWidth(1, 170);
+    ui->MonitorView->setColumnWidth(2, 170);
+    ui->MonitorView->setColumnWidth(3, 170);
+    ui->MonitorView->setColumnWidth(4, 230);
+    ui->MonitorView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    ruleMonitorList.clear();
+    ruleMonitorStruct record;
+    for (int i = 0; i < 40; i++) {
+        record.tag = "";
+        record.value = 0;
+        record.type = 0;
+        record.result = 0;
+        record.timestamp = 0;
+        record.ts = "";
+        record.sequence = i;
+        ruleMonitorList.append(record);
+    }
+    m_RuleMonitorModel->updateData(ruleMonitorList);
+
+    for (int i = 0; i < 40; i++) {
+        if (record.tag == "")
+            ui->MonitorView->setRowHidden(i, true);
+    }
+    ui->MonitorView->setColumnHidden(5, true);
+}
+
+void MainWindow::asMenuPaint(QPoint pos)
+{
+    asMenu->exec(QCursor::pos());
+}
+
+void MainWindow::asSettingAction()
+{
+    m_asDialog = new asDialog(this);
+    m_asDialog->setWindowTitle("ID-Reg Settings");
+    m_asDialog->show();
+}
+
+void MainWindow::groupNetViewModel()
+{
+    m_pModel = new NetModel(nullptr);
+    ui->netBitMapTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->netBitMapTableView->setShowGrid(false);
+    ui->netBitMapTableView->setFrameShape(QFrame::NoFrame);
+    ui->netBitMapTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->netBitMapTableView->setModel(m_pModel);
+    ui->netBitMapTableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    QList<Device> recordList;
+    for (int i = 1; i <= 250; ++i)
+    {
+        Device record;
+        record.bChecked = false;
+        record.id = i;
+        recordList.append(record);
+    }
+    m_pModel->updateData(recordList);
+
+    ui->netBitMapTableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    asMenu = new QMenu(ui->netBitMapTableView);
+    QAction *actionSetting = new QAction();
+    actionSetting->setText(QString("Settings"));
+    asMenu->addAction(actionSetting);
+    connect(ui->netBitMapTableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(asMenuPaint(QPoint)));
+    connect(actionSetting, &QAction::triggered, this, &MainWindow::asSettingAction);
+}
+
+void MainWindow::ruleChainViewModel()
+{
+    // ui->monitorRadioButton->setHidden(true);
+
+    m_ruleChainModel = new RuleChain(this);
+
+    ui->RuleVIew->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->RuleVIew->setShowGrid(true);
+    ui->RuleVIew->setFrameShape(QFrame::Box);
+    ui->RuleVIew->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->RuleVIew->setModel(m_ruleChainModel);
+    ui->RuleVIew->setColumnWidth(0, 100);
+    ui->RuleVIew->setColumnWidth(1, 85);
+    ui->RuleVIew->setColumnWidth(2, 70);
+    ui->RuleVIew->setColumnWidth(3, 100);
+    ui->RuleVIew->setColumnWidth(4, 100);
+    ui->RuleVIew->setColumnWidth(5, 80);
+    ui->RuleVIew->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    ruleChainMenu = new QMenu(ui->RuleVIew);
+    QAction *actionUpdateSensInfo = new QAction();
+    QAction *actionDelSensInfo = new QAction();
+    actionUpdateSensInfo ->setText(QString("Edit"));
+    actionDelSensInfo ->setText(QString("Delete"));
+    ruleChainMenu->addAction(actionUpdateSensInfo);
+    ruleChainMenu->addAction(actionDelSensInfo);
+    connect(ui->RuleVIew, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(ruleChainMenuPaint(QPoint)));
+
+    connect(actionUpdateSensInfo, &QAction::triggered, this, &MainWindow::ruleChainEditAction);
+    connect(actionDelSensInfo, &QAction::triggered, this, &MainWindow::ruleChainDelete);
+
+    ruleChainList.clear();
+    rule_chain record;
+    for (int i = 0; i < 40; i++) {
+        record.ruleName = "";
+        record.inDevId = 0;
+        record.inDevCh = 0;
+        record.ruleType = 0;
+        record.outDevId = 0;
+        record.outDevCh = 0;
+        record.seq = i;
+        ruleChainList.append(record);
+    }
+    m_ruleChainModel->updateData(ruleChainList);
+
+    for (int i = 0; i < 40; i++) {
+        if (record.ruleName == "")
+            ui->RuleVIew->setRowHidden(i, true);
+    }
+    ui->RuleVIew->setColumnHidden(6, true);
+}
+
+void MainWindow::insertValueModule()
+{
+    QStandardItemModel *ruleModel = new QStandardItemModel();
+
+    ruleModel->setHorizontalHeaderItem(0, new QStandardItem(QObject::tr("Rule Name")));
+    ruleModel->setHorizontalHeaderItem(1, new QStandardItem(QObject::tr("Input ID")));
+    ruleModel->setHorizontalHeaderItem(2, new QStandardItem(QObject::tr("Address")));
+    ruleModel->setHorizontalHeaderItem(3, new QStandardItem(QObject::tr("Rule Type")));
+    ruleModel->setHorizontalHeaderItem(4, new QStandardItem(QObject::tr("Output ID")));
+    ruleModel->setHorizontalHeaderItem(5, new QStandardItem(QObject::tr("Address")));
+
+    QList<QStandardItem *> item;
+
+    item.append(new QStandardItem(QObject::tr("FishLED")));
+    item.append(new QStandardItem(QObject::tr("1")));
+    item.append(new QStandardItem(QObject::tr("123")));
+    item.append(new QStandardItem(QObject::tr("Voltage-Voltage")));
+    item.append(new QStandardItem(QObject::tr("2")));
+    item.append(new QStandardItem(QObject::tr("25")));
+    ruleModel->appendRow(item);
+    item.clear();
+
+    item.append(new QStandardItem(QObject::tr("PLC")));
+    item.append(new QStandardItem(QObject::tr("12")));
+    item.append(new QStandardItem(QObject::tr("31")));
+    item.append(new QStandardItem(QObject::tr("Voltage-Current")));
+    item.append(new QStandardItem(QObject::tr("24")));
+    item.append(new QStandardItem(QObject::tr("17")));
+    ruleModel->appendRow(item);
+    item.clear();
+
+    ui->RuleVIew->setModel(ruleModel);
+    ui->RuleVIew->verticalHeader()->hide();
+    ui->RuleVIew->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+}
+
+void MainWindow::insertMonitorValueModule()
+{
+    QStandardItemModel *ruleModel = new QStandardItemModel();
+
+    ruleModel->setHorizontalHeaderItem(0, new QStandardItem(QObject::tr("Rule Name")));
+    ruleModel->setHorizontalHeaderItem(1, new QStandardItem(QObject::tr("Collect Salve Analog")));
+    ruleModel->setHorizontalHeaderItem(2, new QStandardItem(QObject::tr("Handle")));
+    ruleModel->setHorizontalHeaderItem(3, new QStandardItem(QObject::tr("Controlled Result")));
+    ruleModel->setHorizontalHeaderItem(4, new QStandardItem(QObject::tr("Time Stamp")));
+    QList<QStandardItem *> item;
+
+    QDateTime time = QDateTime::currentDateTime();
+    QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+
+    item.append(new QStandardItem(QObject::tr("FishLED")));
+    item.append(new QStandardItem(QObject::tr("12")));
+    item.append(new QStandardItem(QObject::tr("Voltage-Voltage")));
+    item.append(new QStandardItem(QObject::tr("Success")));
+    item.append(new QStandardItem(StrCurrentTime));
+    ruleModel->appendRow(item);
+    item.clear();
+
+    item.append(new QStandardItem(QObject::tr("PLC")));
+    item.append(new QStandardItem(QObject::tr("233")));
+    item.append(new QStandardItem(QObject::tr("Voltage-Input")));
+    item.append(new QStandardItem(QObject::tr("Fail")));
+    item.append(new QStandardItem(StrCurrentTime));
+    ruleModel->appendRow(item);
+    item.clear();
+
+    ruleModel->item(0, 0)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(0, 1)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(0, 2)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(0, 3)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(0, 4)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(1, 0)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(1, 1)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(1, 2)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(1, 3)->setTextAlignment(Qt::AlignCenter);
+    ruleModel->item(1, 4)->setTextAlignment(Qt::AlignCenter);
+
+    ui->MonitorView->setModel(ruleModel);
+    ui->MonitorView->verticalHeader()->hide();
+    ui->MonitorView->setColumnWidth(0, 180);
+    ui->MonitorView->setColumnWidth(1, 189);
+    ui->MonitorView->setColumnWidth(2, 180);
+    ui->MonitorView->setColumnWidth(3, 180);
+    ui->MonitorView->setColumnWidth(4, 210);
+}
+
 void MainWindow::initActions()
 {
+
 #ifdef ACTION
     ui->actionConnect->setEnabled(true); 
     ui->actionDisconnect->setEnabled(false);
@@ -317,6 +578,7 @@ void MainWindow::initActions()
     connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
     //connect(ui->actionLog, &QAction::triggered, m_logdialog, &QDialog::show);
 #endif
+
     ui->action_Settings->setEnabled(true);
     connect(ui->action_Settings, &QAction::triggered, m_system, &QDialog::show);
 
@@ -324,6 +586,7 @@ void MainWindow::initActions()
     connect(ui->action_Default, &QAction::triggered, this, &MainWindow::defaultTheme);
     ui->actionDa_rk->setEnabled(true);
     connect(ui->actionDa_rk, &QAction::triggered, this, &MainWindow::darkTheme);
+    connect(m_ymodem, SIGNAL(finRcv(QString)), this, SLOT(parseEventLog(QString)));
 }
 
 void MainWindow::findComPort()
@@ -459,19 +722,56 @@ void MainWindow::setWidgetLoRa()
 {
     QString s = ui->portEdit_3->text();
 
-    if (s.contains("LM")) {
+    if (s.contains("LM100")) {
         ui->tabWidget->setTabEnabled(3, false);
         ui->tabWidget->setTabEnabled(4, false);
         ui->tabWidget->setTabEnabled(7, false);
-
+        ui->tabWidget->setTabEnabled(8, false);
+        ui->tabWidget->setTabEnabled(9, false);
+        ui->tabWidget->setTabEnabled(10, false);
         ui->netSIDRead->setEnabled(false);
         ui->netSIDWrite->setEnabled(false);
-    }else if (s.contains("LC")) {
+    }else if (s.contains("LM200")) {
+        ui->tabWidget->setTabEnabled(3, false);
+        ui->tabWidget->setTabEnabled(4, false);
+        ui->tabWidget->setTabEnabled(7, false);
+        ui->netSIDRead->setEnabled(false);
+        ui->netSIDWrite->setEnabled(false);
+    }
+    else if (s.contains("LC")) {
         ui->tabWidget->setTabEnabled(3, false);
         ui->tabWidget->setTabEnabled(7, false);
+        ui->tabWidget->setTabEnabled(8, false);
+        ui->tabWidget->setTabEnabled(9, false);
+        ui->tabWidget->setTabEnabled(10, false);
+        ui->netSIDRead->setEnabled(true);
+        ui->netSIDWrite->setEnabled(true);
     }else if (s.contains("LR")) {
         ui->tabWidget->setTabEnabled(1, false);
-        ui->tabWidget->setTabEnabled(4, false);
+        ui->tabWidget->setTabEnabled(2, false);
+        ui->tabWidget->setTabEnabled(8, false);
+        ui->tabWidget->setTabEnabled(9, false);
+        ui->tabWidget->setTabEnabled(10, false);
+        // ui->tabWidget->setTabEnabled(4, false);
+
+        ui->label_8->setVisible(false);
+        ui->portEdit_2->setVisible(false);
+        ui->label_71->setVisible(false);
+    }
+
+    if (s.contains("400")){
+        frequency = freq400;
+        ui->FrequencyComboBox->addItem("433");
+        ui->FrequencyComboBox->addItem("470");
+        ui->FrequencyComboBox->addItem("490");
+    } else if (s.contains("TH")){
+        frequency = freqTH;
+        ui->FrequencyComboBox->addItem("920");
+        ui->FrequencyComboBox->addItem("925");
+    } else if (s.contains("900")) {
+        frequency = freq800;
+        ui->FrequencyComboBox->addItem("868");
+        ui->FrequencyComboBox->addItem("915");
     }
 
     ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
@@ -496,6 +796,7 @@ void MainWindow::setWidget()
     ui->tabWidget_2->setTabEnabled(6, false);
 
     ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
+
     update();
 }
 
@@ -509,19 +810,35 @@ void MainWindow::on_connectButton_clicked()
     if (modbusDevice->state() == QModbusDevice::ConnectedState) {
             modbusDevice->disconnectDevice();
             ui->actionConnect->setEnabled(true);
-            ui->actionDisconnect->setEnabled(false);
+            ui->actionDisconnect->setEnabled(false);         
+            ui->label_8->setVisible(true);
+            ui->portEdit_2->setVisible(true);
+            ui->label_71->setVisible(true);
 
             QString s = ui->portEdit_3->text();
-
-            if (s.contains("LM")) {
+            if (s.contains("LM100")) {
                 ui->tabWidget->setTabEnabled(3, true);
                 ui->tabWidget->setTabEnabled(4, true);
-            }else if (s.contains("LC")){
+                ui->tabWidget->setTabEnabled(8, true);
+                ui->tabWidget->setTabEnabled(9, true);
+                ui->tabWidget->setTabEnabled(10, true);
+            }else if (s.contains("LM200")) {
                 ui->tabWidget->setTabEnabled(3, true);
-            }else if (s.contains("LR")){
+                ui->tabWidget->setTabEnabled(4, true);
+            }
+            else if (s.contains("LC")) {
+                ui->tabWidget->setTabEnabled(3, true);
+                ui->tabWidget->setTabEnabled(8, true);
+                ui->tabWidget->setTabEnabled(9, true);
+                ui->tabWidget->setTabEnabled(10, true);
+            } else if (s.contains("LR")) {
                 ui->tabWidget->setTabEnabled(1, true);
+                ui->tabWidget->setTabEnabled(2, true);
                 ui->tabWidget->setTabEnabled(4, true);
-            } else if (s.contains("DL")){
+                ui->tabWidget->setTabEnabled(8, true);
+                ui->tabWidget->setTabEnabled(9, true);
+                ui->tabWidget->setTabEnabled(10, true);
+            } else if (s.contains("DL")) {
                 // ui->tabWidget_2->setTabEnabled(4, true);
                 // ui->tabWidget_2->setTabEnabled(5, true);
                 // ui->tabWidget_2->setTabEnabled(6, true);
@@ -530,60 +847,39 @@ void MainWindow::on_connectButton_clicked()
             ui->tabWidget->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
             ui->tabWidget_2->setStyleSheet("QTabBar::tab:disabled {width: 0; color: transparent;}");
             ui->portEdit_3->clear();
-
             update(); // repaint
 
             m_login_flag = 0;
+            m_login_flag_2 = 0;
             sensorFlag = false;
-     } else {
-        logindialog *log = new logindialog(this);
-        log->show();
 
-        while(!m_login_flag){
+            ui->FrequencyComboBox->clear();
+     } else {
+        logindialog log(this);
+        log.show();
+
+        // init
+        m_login_flag_2 = 0;
+
+        while(!m_login_flag) {
+            // quit button
+            if (m_login_flag_2)
+                return;
             _sleep(1500);
         }
-#if 0
-        if (static_cast<ModbusConnection> (ui->connectType->currentIndex()) == Serial) {
-            modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
-                ui->portComboBox->currentText());
-            modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,
-                m_settingsDialog->settings().parity);
-            modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
-                m_settingsDialog->settings().baud);
-            modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
-                m_settingsDialog->settings().dataBits);
-            modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
-                m_settingsDialog->settings().stopBits);
-        } else {
-            /*
-            const QUrl url = QUrl::fromUserInput(ui->portEdit->text());
-            modbusDevice->setConnectionParameter(QModbusDevice::NetworkPortParameter, url.port());
-            modbusDevice->setConnectionParameter(QModbusDevice::NetworkAddressParameter, url.host());
-            */
-        }
-        modbusDevice->setTimeout(m_settingsDialog->settings().responseTime);
-        modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
 
-
-        if (!modbusDevice->connectDevice()) {
-            statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
-        } else {
-            ui->actionConnect->setEnabled(false);
-            ui->actionDisconnect->setEnabled(true);
-        }
-#endif
         ui->actionConnect->setEnabled(false);
         ui->actionDisconnect->setEnabled(true);
+
+        setModelName();
+        setIOChannel();
+
+        #ifdef LORA
+            setWidgetLoRa();
+        #elif
+            setWidget();
+        #endif
     }
-
-    setModelName();
-    setIOChannel();
-#ifdef LORA
-    setWidgetLoRa();
-#elif
-    setWidget();
-#endif
-
 }
 
 void MainWindow::onStateChanged(int state)
@@ -599,10 +895,6 @@ void MainWindow::onStateChanged(int state)
         ui->connectButton->setText(tr("Disconnect"));
 }
 
-/*
-    IO Set Code Configuration supposed to be Product Utility Tool
-    Remain Since already done
-*/
 void MainWindow::writeSingleHoldingRegister(QModbusDataUnit &writeUnit_)
 {
     if (auto *reply = modbusDevice->sendWriteRequest(writeUnit_, ui->serverEdit->value())) {
@@ -620,7 +912,6 @@ void MainWindow::writeSingleHoldingRegister(QModbusDataUnit &writeUnit_)
                 reply->deleteLater();
             });
         } else {
-            // broadcast replies return immediately
             reply->deleteLater();
         }
     } else {

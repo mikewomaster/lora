@@ -39,7 +39,7 @@ systemDialog::systemDialog(QWidget *parent) :
     ui->systemApply->setEnabled(false);
 #endif
     ui->widget->setVisible(false);
-    this->setFixedSize(395, 175);
+    this->setFixedSize(510, 315);
 }
 
 systemDialog::~systemDialog()
@@ -361,12 +361,230 @@ void systemDialog::on_SNRead_clicked()
 void systemDialog::on_pushButton_clicked()
 {
     if (ui->pushButton->text() == ">>>") {
-        this->setFixedSize(395,311);
+        this->setFixedSize(510, 481);
         ui->widget->setVisible(true);
         ui->pushButton->setText("<<<");
     } else if (ui->pushButton->text() == "<<<") {
-        this->setFixedSize(395,175);
+        this->setFixedSize(510, 315);
         ui->widget->setVisible(false);
         ui->pushButton->setText(">>>");
     }
+}
+
+void systemDialog::globalTSChkReadReady()
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+
+        quint64 data;
+        data = unit.value(0);
+        data = (data << 16) + unit.value(1);
+
+        QDateTime time = QDateTime::fromTime_t(data);
+        QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+        ui->globalTSLineEdit->setText(StrCurrentTime);
+        w->statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        w->statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        w->statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void systemDialog::on_globalTSCheckPushButton_clicked()
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    QModbusClient* modbusDevice = w->getModbusDevice();
+
+    if (!modbusDevice)
+        return;
+    w->statusBar()->clearMessage();
+
+    quint16 ADDR = SENSORTS;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 2);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, 1)) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &systemDialog::globalTSChkReadReady);
+        else
+            delete reply; // broadcast replies return immediately
+    } else {
+        w->statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void systemDialog::on_globalTSSetPushButton_clicked()
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    QModbusClient* modbusDevice = w->getModbusDevice();
+
+    QDateTime time = QDateTime::currentDateTime();
+    int timeT = time.toTime_t();
+    QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+    ui->globalTSLineEdit->setText(StrCurrentTime);
+
+    quint32 timeoutStamp = timeT;
+    QVector<quint16> values;
+
+    for (int i = 1; i >= 0; i--) {
+        quint16 temp = 0;
+        temp = (timeoutStamp >> (i*2*8)) & 0x0000ffff;
+        values.push_back(temp);
+    }
+
+    if (!modbusDevice)
+        return;
+    w->statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, SENSORTS, 2);
+    writeUnit.setValues(values);
+    if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, 1)) {
+        if (!reply->isFinished()) {
+            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                MainWindow *mw = (MainWindow*) parentWidget();
+                if (reply->error() == QModbusDevice::ProtocolError) {
+                    mw->statusBar()->showMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+                        .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16),
+                        5000);
+                } else if (reply->error() != QModbusDevice::NoError) {
+                    mw->statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
+                        arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
+                }
+                mw->statusBar()->showMessage(tr("OK!"));
+                reply->deleteLater();
+            });
+        } else {
+            // broadcast replies return immediately
+            reply->deleteLater();
+        }
+    } else {
+        w->statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void systemDialog::handle_readready(QComboBox *cb)
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        cb->setCurrentIndex(unit.value(0));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+
+    } else {
+
+    }
+    reply->deleteLater();
+}
+
+void systemDialog::handle_write(int addr, QComboBox *cb)
+{
+    MainWindow *w = (MainWindow*) parentWidget();
+    QModbusClient* modbusDevice = w->getModbusDevice();
+    if (!modbusDevice)
+        return;
+
+    quint16 value = cb->currentIndex();
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, addr, 1);
+
+    writeUnit.setValue(0, value);
+    if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, 1)) {
+        if (!reply->isFinished()) {
+            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                MainWindow *w = (MainWindow*) parentWidget();
+                if (reply->error() == QModbusDevice::ProtocolError) {
+                   MainWindow *w = (MainWindow*) parentWidget();
+                   w->statusBar()->showMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+                        .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16),
+                        5000);
+
+                } else if (reply->error() != QModbusDevice::NoError) {
+                   w->statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
+                        arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
+                } else {
+                    w->statusBar()->showMessage(tr("OK!"));
+                }
+
+                reply->deleteLater();
+            });
+        } else {
+            // broadcast replies return immediately
+            reply->deleteLater();
+        }
+    } else {
+        w->statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void systemDialog::currentHoldReadReady()
+{
+    handle_readready(ui->currentHoldComboBox);
+}
+
+void systemDialog::on_currentHoldCheck_clicked()
+{
+    handle_read(CurrentHold, HoldEntries, &currentHoldReadReady);
+}
+
+void systemDialog::on_currentHoldSet_clicked()
+{
+    handle_write(CurrentHold, ui->currentHoldComboBox);
+}
+
+void systemDialog::voltageHoldReadReady()
+{
+    handle_readready(ui->voltageHoldComboBox);
+}
+
+void systemDialog::on_voltageHoldChk_clicked()
+{
+    handle_read(VoltageHold, HoldEntries, &voltageHoldReadReady);
+}
+
+void systemDialog::on_voltageHoldSet_clicked()
+{
+    handle_write(VoltageHold, ui->voltageHoldComboBox);
+}
+
+void systemDialog::PWM5ReadReady()
+{
+    handle_readready(ui->PWMComboBox);
+}
+
+void systemDialog::on_PWMChk_clicked()
+{
+    handle_read(PWM5, HoldEntries, &PWM5ReadReady);
+}
+
+void systemDialog::on_PWMSet_clicked()
+{
+    handle_write(PWM5, ui->PWMComboBox);
+}
+
+void systemDialog::PWMOCReadReady()
+{
+    handle_readready(ui->PWMOCComboBox);
+}
+
+void systemDialog::on_PWMOCChk_clicked()
+{
+    handle_read(PWMOC, HoldEntries, &PWMOCReadReady);
+}
+
+void systemDialog::on_PWMOCSet_clicked()
+{
+    handle_write(PWMOC, ui->PWMOCComboBox);
 }

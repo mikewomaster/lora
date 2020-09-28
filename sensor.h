@@ -13,6 +13,10 @@
 #define RTUSENSORCLOCK  (801 - 1)
 #define RTUSENSORINTERVAL (803 - 1)
 
+#define SENSORCOUNTDOWNTIME (804 - 1)
+#define SENSORTRANSFORMANT (805 - 1)
+#define SENSORTS (806 - 1)
+
 static const QStringList sl ={
       "",
       "ES101-LL",

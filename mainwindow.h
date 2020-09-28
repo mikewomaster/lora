@@ -64,18 +64,25 @@
 #include "netmodel.h"
 #include "dlms_model.h"
 #include "sensor.h"
+#include "rulechain.h"
 #include "obis_edit.h"
+#include "rulechain.h"
+#include "rulechainedit.h"
+#include "rulemonitor.h"
+#include "eventlogmodel.h"
+#include "ymodem.h"
+#include "asdialog.h"
 
 // MACRO CRONTROL Area
 // #define TEST_DATA
 // #define SKIN
 // #define LOGIN
 // #define STORE
+// #define LAUNCH
 #define ACTION
-#define UtilityVersion "WoMaster End-Node Utility V0.5.7"
-#define LAUNCH
 #define ADMIN
 #define LORA
+#define UtilityVersion "LoRa Utility V1.3.0"
 
 QT_BEGIN_NAMESPACE
 
@@ -83,10 +90,10 @@ class QModbusClient;
 class QModbusReply;
 
 namespace Ui {
-class MainWindow;
-class SettingsDialog;
-class logdialog;
-class systemDialog;
+    class MainWindow;
+    class SettingsDialog;
+    class logdialog;
+    class systemDialog;
 }
 
 QT_END_NAMESPACE
@@ -132,6 +139,13 @@ class WriteRegisterModel;
 
 #define RSSIADDR (161 -1)
 #define SNRAddr (162 - 1)
+
+enum FREQ {
+  freq400 = 0,
+  freq800,
+  freqTH
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -143,7 +157,7 @@ public:
     {
        return modbusDevice;
     }
-    void setPortName(QString port){
+    void setPortName(QString port) {
         portName = port;
     }
 private:
@@ -159,6 +173,7 @@ private:
     void handle_write(QLineEdit* , quint16);
     void handle_write(QComboBox* , quint16);
     void handle_write(QRadioButton* ,quint16);
+    void handle_write(QModbusDataUnit);
     void handle_read(int addr, void (MainWindow::*fp)());
     void handle_read(int addr, int entry, void (MainWindow::*fp)());
     void handle_read_ready(QLineEdit* );
@@ -177,10 +192,18 @@ private:
     void checkBoxClear();
     void setCheckBoxLow(quint16);
     void setCheckBoxHigh(quint16);
-public slots:
-    void on_connectButton_clicked();
+    void chgrdbtn();
+    void ruleChainViewModel();
+    void groupNetViewModel();
+    void ruleChainMonitorViewModel();
+    void eventMVC();
+    void insertValueModule();
+    void insertMonitorValueModule();
+    void ruleChainAddModbus(rule_chain, int);
+
 
 private slots:
+    void on_connectButton_clicked();
     void onStateChanged(int state);
     void modelNameReadReady();
     void currentReadReady();
@@ -331,7 +354,6 @@ private slots:
     void on_idWrite_clicked();
     void idReadReady();
     void on_idRead_clicked();
-    void on_mqttStatuWrite_clicked();
     void mqttStatuReadReady();
     void on_mqttStatusRead_clicked();
     void on_SNPushButtonWrite_clicked();
@@ -375,8 +397,13 @@ private slots:
     void on_sensorClearPushButton_clicked();
     void sensorUpdateReadReady();
     void sensMensu(QPoint pos);
+    void ruleChainMenuPaint(QPoint pos);
+    void asMenuPaint(QPoint pos);
     void sensEdit();
     void sensDelete();
+    void ruleChainEditAction();
+    void asSettingAction();
+    void ruleChainDelete();
     void on_obisReload_clicked();
     void on_obisAdd_clicked();
     void obisUpdatReadReady();
@@ -392,6 +419,42 @@ private slots:
     void sensorTimeReadReady();
     void on_sensorTimeCheckPushButton_clicked();
     void on_sensorTimeSetPushButton_clicked();
+    void sensorTimeStampReadReady();
+    void on_sensorTSChkButton_clicked();
+    void on_sensorTSSetBtn_clicked();
+    void on_sensorCTRadioButton_clicked();
+    void on_sensorSTradioButton_clicked();
+    void on_sensorCountdownCheckButton_clicked();
+    void sensorCountDownReadReady();
+    void on_sensorIntervalSetPushButton_2_clicked();
+    void sensorFormatReadReady();
+    void on_ruleChkPushButton_clicked();
+    void on_ruleChainAddPushButton_clicked();
+    void on_ruleIntervalChkPushButton_clicked();
+    void on_ruleIntervalSetPushButton_clicked();
+    void on_ruleClrPushButton_clicked();
+    void on_monitorRadioButton_clicked();
+    void on_monitorCheckpushButton_clicked();
+    void chainRuleTableReadReady();
+    void ruleChainEditSlot(int);
+    void ruleChainTableReadReady();
+    void ruleMonitorTableReadReady();
+    void on_monitorClearPushButton_clicked();
+    void on_vinWrite_2_clicked();
+    void vin2RefReadReady();
+    void on_vinRead_2_clicked();
+    void on_iinWrite_2_clicked();
+    void iin2RefReadReady();
+    void on_iinRead_2_clicked();
+    void on_eventLogEnableRadioButton_clicked();
+    void on_ELogChkPushButton_clicked();
+    void on_ELogClearPushButton_clicked();
+    void parseEventLog(QString);
+    void saveToTxt();
+    // void eventLogSlot();
+    void lcTimeOutReadReady();
+    void on_LCTimeoutRead_clicked();
+    void on_LCTimeoutWrite_clicked();
 
 private:
     QModbusReply *lastRequest;
@@ -403,24 +466,38 @@ private:
     QStandardItemModel *m_Model;
     NetModel *m_pModel;
     sensor *m_sensorModel;
+    ruleMonitor *m_RuleMonitorModel;
+    RuleChain *m_ruleChainModel;
+    eventLogModel *eLModel;
     QList<QStandardItem *> storageItems;
     QString portName;
     QTimer *serialAlarm;
+    QTimer *monitorAlarm;
     QVector<QString> serialInfoVector;
     QMenu *popMenu;
     QMenu *senpopMenu;
+    QMenu *ruleChainMenu;
+    QMenu *asMenu;
     bool sensorFlag;
-    sensor_edit* m_sensor_dialog;
- public:
+    sensor_edit *m_sensor_dialog;
+    ruleChainEdit *m_ruleChainEdit;
+    asDialog *m_asDialog;
+    ymodem *m_ymodem;
+public:
      Ui::MainWindow *ui;
      QModbusClient *modbusDevice;
      QSerialPort *m_serial;
      unsigned char m_login_flag;
+     unsigned char m_login_flag_2;
      bool sensor_edit_flag;
      bool obis_edit_flag;
      QList<Dlms> dlmsRecordList;
      QList<sen> sensorRecordList;
+     QList<rule_chain> ruleChainList;
+     QList<ruleMonitorStruct> ruleMonitorList;
+     QList<eventLogData> eventLogList;
      dlmsModel *m_pdlmsModel;
+     int frequency;
 };
 
 #endif // MAINWINDOW_H

@@ -4,7 +4,7 @@
 #include <QDialog>
 
 namespace Ui {
-class ruleChainEdit;
+    class ruleChainEdit;
 }
 
 class ruleChainEdit : public QDialog
@@ -13,7 +13,15 @@ class ruleChainEdit : public QDialog
 
 public:
     explicit ruleChainEdit(QWidget *parent = 0);
+    ruleChainEdit(QWidget *parent = 0, int t = 0);
     ~ruleChainEdit();
+    int term;
+
+Q_SIGNALS:
+    void ruleChainSignal(int);
+
+private slots:
+    void on_ruleChainEditPushButton_clicked();
 
 private:
     Ui::ruleChainEdit *ui;

@@ -73,11 +73,12 @@ void MainWindow::on_idRead_clicked()
 }
 
 // status
+/*
 void MainWindow::on_mqttStatuWrite_clicked()
 {
     handle_write(ui->mqttStatusLineEdit, mqttStatusAddress);
 }
-
+*/
 void MainWindow::on_pidButtonWrite_8_clicked()
 {
     handle_write(ui->mqttStatusLineEdit, mqttStatusAddress);

@@ -6,6 +6,7 @@
 #define netAESEnableAddr (118 - 1)
 #define netAESKeyAddr (119 - 1)
 #define netTimeOutAddr (150 - 1)
+#define LCTimeOutAddr (151 - 1)
 #define SNAddr (142 - 1)
 #define loraWANEnable (257 -1)
 
@@ -14,6 +15,7 @@
 #define aesEnableEntries 1
 #define aesKeyEntries 8
 #define timeOutEntries 1
+#define LCTimeOutEntries 1
 #define SNEntries 8
 
 #endif // NETTAB_H

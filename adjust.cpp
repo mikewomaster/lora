@@ -38,6 +38,33 @@ void MainWindow::handle_write(QRadioButton *r, quint16 add)
     writeSingleHoldingRegister(writeUnit);
 }
 
+void MainWindow::handle_write(QModbusDataUnit writeUnit)
+{
+    if (!modbusDevice)
+            return;
+
+    if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished()) {
+            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                if (reply->error() == QModbusDevice::ProtocolError) {
+                    statusBar()->showMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+                        .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16),
+                        5000);
+                } else if (reply->error() != QModbusDevice::NoError) {
+                    statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
+                        arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
+                }
+                statusBar()->showMessage(tr("OK!"));
+                reply->deleteLater();
+            });
+        } else {
+            reply->deleteLater();
+        }
+    } else {
+        statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
 void MainWindow::nbStatusFill(short res, QLineEdit *le)
 {
    switch(res)
@@ -164,6 +191,22 @@ void MainWindow::on_vinWrite_clicked()
     handle_write(ui->vinLineEdit, vinRef);
 }
 
+// VIN2 Reference Voltage
+void MainWindow::vin2RefReadReady()
+{
+    handle_read_ready(ui->vinLineEdit_2);
+}
+
+void MainWindow::on_vinRead_2_clicked()
+{
+    handle_read(vin2Ref, &vin2RefReadReady);
+}
+
+void MainWindow::on_vinWrite_2_clicked()
+{
+    handle_write(ui->vinLineEdit_2, vin2Ref);
+}
+
 // VOut Reference Voltage
 void MainWindow::voutRefReadReady()
 {
@@ -196,6 +239,21 @@ void MainWindow::on_iinRead_clicked()
     handle_read(iinRef, &iinRefReadReady);
 }
 
+// IIn2 Reference Voltage
+void MainWindow::iin2RefReadReady()
+{
+    handle_read_ready(ui->iinLineEdit_2);
+}
+
+void MainWindow::on_iinWrite_2_clicked()
+{
+    handle_write(ui->iinLineEdit_2, iin2Ref);
+}
+
+void MainWindow::on_iinRead_2_clicked()
+{
+    handle_read(iin2Ref, &iin2RefReadReady);
+}
 
 // Iout Reference Voltage
 void MainWindow::on_ioutWrite_clicked()

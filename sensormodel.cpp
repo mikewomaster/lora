@@ -140,7 +140,7 @@ void MainWindow::sensorUpdateReadReady()
             if (times == 1) {
                 QString s = "";
                 int stringNumber = 0;
-                for (uint j = 7*i + 0; j < 7*i + 4; j++) {
+                for (int j = 7*i + 0; j < 7*i + 4; j++) {
                     if ((unit.value(j) >> 8) == 0x00)
                         break;
                     s[2*stringNumber] = unit.value(j) >> 8;
@@ -156,7 +156,7 @@ void MainWindow::sensorUpdateReadReady()
             } else {
                 QString s = "";
                 int stringNumber = 0;
-                for (uint j = 7*i + 0; j < 7*i + 4; j++) {
+                for (int j = 7*i + 0; j < 7*i + 4; j++) {
                     if ((unit.value(j) >> 8) == 0x00)
                         break;
                     s[2*stringNumber] = unit.value(j) >> 8;
@@ -297,11 +297,14 @@ void MainWindow::sensEdit()
         return;
 
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, RTUSENSORADDR + term*RTUSENSORNUM, RTUSENSORNUM);
+
+    qDebug() << term;
+
     m_sensor_dialog->seq = term;
     m_sensor_dialog->show();
     m_sensor_dialog->setWindowTitle("Sensor Setting");
 
-    while(!sensor_edit_flag){
+    while(!sensor_edit_flag) {
         _sleep(500);
     }
 
@@ -365,9 +368,10 @@ void MainWindow::sensDelete()
     QModelIndex index = model->index(row, 4);
     QVariant data = model->data(index);
     int term = data.toInt();
+    qDebug() << term;
 
     sensorRecordList[term].type = "";
-    sensorRecordList[term].type_ = 0;
+    sensorRecordList[term].type_ = 1;
     sensorRecordList[term].id = 0;
     sensorRecordList[term].reg_addr = 0;
     sensorRecordList[term].len = 0;
@@ -419,7 +423,7 @@ void MainWindow::sensor_view_model()
     ui->sensorTableView->setColumnWidth(4, 70);
     ui->sensorTableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    senpopMenu = new QMenu(ui->obisView);
+    senpopMenu = new QMenu(ui->sensorTableView);
     QAction *actionUpdateSensInfo = new QAction();
     QAction *actionDelSensInfo = new QAction();
     actionUpdateSensInfo ->setText(QString("Edit"));
@@ -634,6 +638,8 @@ void MainWindow::on_sensorTimeCheckPushButton_clicked()
     } else {
         statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
     }
+    _sleep(20);
+    chgrdbtn();
 }
 
 void MainWindow::setClock(quint32 *clock)
@@ -745,5 +751,234 @@ void MainWindow::on_sensorTimeSetPushButton_clicked()
         }
     } else {
         statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void MainWindow::sensorTimeStampReadReady()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+
+        quint64 data;
+        data = unit.value(0);
+        data = (data << 16) + unit.value(1);
+
+        QDateTime time = QDateTime::fromTime_t(data);
+        QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+        ui->sensorTSLineEdit->setText(StrCurrentTime);
+        statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void MainWindow::on_sensorTSChkButton_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    quint16 ADDR = SENSORTS;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 2);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &MainWindow::sensorTimeStampReadReady);
+        else
+            delete reply; // broadcast replies return immediately
+    } else {
+        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void MainWindow::on_sensorTSSetBtn_clicked()
+{
+    QDateTime time = QDateTime::currentDateTime();
+    int timeT = time.toTime_t();
+    QString StrCurrentTime = time.toString("yyyy-MM-dd hh:mm:ss ddd");
+    ui->sensorTSLineEdit->setText(StrCurrentTime);
+
+    quint32 timeoutStamp = timeT;
+    QVector<quint16> values;
+
+    for (int i = 1; i >= 0; i--) {
+        quint16 temp = 0;
+        temp = (timeoutStamp >> (i*2*8)) & 0x0000ffff;
+        values.push_back(temp);
+    }
+
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, SENSORTS, 2);
+    writeUnit.setValues(values);
+    if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished()) {
+            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                if (reply->error() == QModbusDevice::ProtocolError) {
+                    statusBar()->showMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+                        .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16),
+                        5000);
+                } else if (reply->error() != QModbusDevice::NoError) {
+                    statusBar()->showMessage(tr("Write response error: %1 (code: 0x%2)").
+                        arg(reply->errorString()).arg(reply->error(), -1, 16), 5000);
+                }
+                statusBar()->showMessage(tr("OK!"));
+                reply->deleteLater();
+            });
+        } else {
+            // broadcast replies return immediately
+            reply->deleteLater();
+        }
+    } else {
+        statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void MainWindow::sensorCountDownReadReady()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        quint32 data;
+        data = unit.value(0);
+        ui->sensorCountDownLineEdit->setText(QString::number(data));
+        statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void MainWindow::on_sensorCountdownCheckButton_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    quint16 ADDR = SENSORCOUNTDOWNTIME;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &MainWindow::sensorCountDownReadReady);
+        else
+            delete reply; // broadcast replies return immediately
+    } else {
+        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+    }
+    _sleep(20);
+    chgrdbtn();
+}
+
+void MainWindow::on_sensorIntervalSetPushButton_2_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, SENSORCOUNTDOWNTIME, 1);
+    quint16 currentOutputValue =  ui->sensorCountDownLineEdit->text().toInt();
+
+    writeUnit.setValue(0, currentOutputValue);
+    writeSingleHoldingRegister(writeUnit);
+}
+
+void MainWindow::on_sensorCTRadioButton_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, SENSORTRANSFORMANT, 1);
+    quint16 currentOutputValue =  0;
+
+    writeUnit.setValue(0, currentOutputValue);
+    writeSingleHoldingRegister(writeUnit);
+}
+
+void MainWindow::on_sensorSTradioButton_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, SENSORTRANSFORMANT, 1);
+    quint16 currentOutputValue =  1;
+
+    writeUnit.setValue(0, currentOutputValue);
+    writeSingleHoldingRegister(writeUnit);
+}
+
+void MainWindow::sensorFormatReadReady()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        ui->sensorCTRadioButton->setChecked(false);
+        ui->sensorSTradioButton->setChecked(false);
+        const QModbusDataUnit unit = reply->result();
+        quint32 data;
+        data = unit.value(0);
+        if (data == 0){
+            ui->sensorCTRadioButton->setChecked(true);
+        }else{
+            ui->sensorSTradioButton->setChecked(true);
+        }
+        statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void MainWindow::chgrdbtn()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    quint16 ADDR = SENSORTRANSFORMANT;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &MainWindow::sensorFormatReadReady);
+        else
+            delete reply; // broadcast replies return immediately
+    } else {
+        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
     }
 }

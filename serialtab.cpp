@@ -1,6 +1,7 @@
 #include <QModbusDataUnit>
 #include <QModbusTcpClient>
 #include <QModbusRtuSerialMaster>
+#include <QMessageBox>
 
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
@@ -20,12 +21,16 @@ void MainWindow::on_serialBtn_clicked()
     int stopBit = ui->s_stopBitsCombo->currentText().toInt();
     int parity = ui->s_parityCombo->currentIndex();
     int modebusAddr = ui->portEdit_2->text().toInt();
+    if(modebusAddr > 250 || modebusAddr < 1) {
+        QMessageBox::information(NULL, "Error","Device Modbus Address Should between 1 and 250!");
+        return;
+    }
 
-     writeUnit.setValue(0, baudRate);
-     writeUnit.setValue(1, dataBit);
-     writeUnit.setValue(2, stopBit);
-     writeUnit.setValue(3, parity);
-     writeUnit.setValue(4, modebusAddr);
+    writeUnit.setValue(0, baudRate);
+    writeUnit.setValue(1, dataBit);
+    writeUnit.setValue(2, stopBit);
+    writeUnit.setValue(3, parity);
+    writeUnit.setValue(4, modebusAddr);
 
     if (auto *reply = modbusDevice->sendWriteRequest(writeUnit, ui->serverEdit->value())) {
         if (!reply->isFinished()) {

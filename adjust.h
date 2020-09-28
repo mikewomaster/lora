@@ -2,8 +2,10 @@
 #define ADJUST_H
 
 #define vinRef (401 - 1)
+#define vin2Ref (411 - 1)
 #define voutRef (402 - 1)
 #define iinRef (403 - 1)
+#define iin2Ref (412 - 1)
 #define ioutRef (404 - 1)
 #define adjust1 (405 - 1)
 #define adjust2 (406 - 1)

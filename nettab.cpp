@@ -64,6 +64,11 @@ void MainWindow::on_netSIDWrite_clicked()
     quint16 ADDR = netSourceIDAddr;
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
     quint16 netsid = ui->srcIDLineEdit->text().toInt();
+    if (netsid > 250 || netsid < 1){
+        QMessageBox::information(NULL, "Error","Source ID Should between 1 and 250!");
+        return;
+    }
+
     writeUnit.setValue(0, netsid);
     writeSingleHoldingRegister(writeUnit);
 }
@@ -178,6 +183,67 @@ void MainWindow::on_netTimeoutWrite_clicked()
     quint16 ADDR = netTimeOutAddr;
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
     quint16 value = ui->ResTOutlineEdit->text().toInt();
+    if (value > 300 || value < 1) {
+        QMessageBox::information(NULL, "Error","Response Timeout Should between 1 and 300!");
+        return;
+    }
+
+    writeUnit.setValue(0, value);
+    writeSingleHoldingRegister(writeUnit);
+}
+void MainWindow::lcTimeOutReadReady()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        quint32 entry = unit.value(0);
+        ui->LCTimeOutlineEdit->setText(QString::number(entry));
+        statusBar()->showMessage(tr("OK!"));
+    } else if (reply->error() == QModbusDevice::ProtocolError) {
+        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+    } else {
+        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
+                                    arg(reply->errorString()).
+                                    arg(reply->error(), -1, 16), 5000);
+    }
+    reply->deleteLater();
+}
+
+void MainWindow::on_LCTimeoutRead_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    quint16 ADDR = LCTimeOutAddr;
+
+    QModbusDataUnit readUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
+
+    if (auto *reply = modbusDevice->sendReadRequest(readUnit, ui->serverEdit->value())) {
+        if (!reply->isFinished())
+            connect(reply, &QModbusReply::finished, this, &MainWindow::lcTimeOutReadReady);
+        else
+            delete reply; // broadcast replies return immediately
+    } else {
+        statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+    }
+}
+
+void MainWindow::on_LCTimeoutWrite_clicked()
+{
+    if (!modbusDevice)
+        return;
+    statusBar()->clearMessage();
+
+    quint16 ADDR = LCTimeOutAddr;
+    QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, 1);
+    quint16 value = ui->LCTimeOutlineEdit->text().toInt();
+
     writeUnit.setValue(0, value);
     writeSingleHoldingRegister(writeUnit);
 }
@@ -254,6 +320,7 @@ void MainWindow::on_netAesKeyWrite_clicked()
     QString str = ui->aesLineEdit->text();
     if (str.size() != 16) {
         QMessageBox::information(NULL, "Error","Length of AES Key Should be 16!");
+        return;
     }
     QVector<quint16> values;
     for (int i = 0; i < str.size(); i++) {
@@ -293,7 +360,6 @@ void MainWindow::on_netAesKeyWrite_clicked()
         statusBar()->showMessage(tr("Write error: ") + modbusDevice->errorString(), 5000);
     }
 }
-
 
 // bit map r/w
 void MainWindow::bitMapReadReady()

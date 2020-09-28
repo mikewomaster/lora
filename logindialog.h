@@ -19,6 +19,7 @@ class logindialog : public QDialog
 
 public:
     explicit logindialog(QWidget *parent = nullptr);
+    void closeEvent(QCloseEvent *event);
     ~logindialog();
 
 private slots:

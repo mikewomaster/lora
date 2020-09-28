@@ -1,6 +1,6 @@
-QT += serialbus serialport widgets
+QT += serialport serialbus widgets
 
-TARGET = WoMasterIOT
+TARGET = LoRaUtility
 TEMPLATE = app
 CONFIG += c++11
 CONFIG += resources_big
@@ -37,7 +37,17 @@ SOURCES += main.cpp\
     sensormodel.cpp \
     sensor_edit.cpp \
     obisview.cpp \
-    obis_edit.cpp
+    obis_edit.cpp \
+    rulechain.cpp \
+    rulechainmodbus.cpp \
+    handelmodebus.cpp \
+    rulechainedit.cpp \
+    rulemonitor.cpp \
+    eventlogmodel.cpp \
+    bucket.cpp \
+    ymodem.cpp \
+    mapmodel.cpp \
+    as.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -64,7 +74,16 @@ HEADERS  += mainwindow.h \
     dlms_model.h \
     sensor.h \
     sensor_edit.h \
-    obis_edit.h
+    obis_edit.h \
+    rulechain.h \
+    rulechainmodbus.h \
+    rulechainedit.h \
+    rulemonitor.h \
+    eventlogmodel.h \
+    bucket.h \
+    ymodem.h \
+    mapmodel.h \
+    asdialog.h
 
 FORMS    += mainwindow.ui \
          settingsdialog.ui \
@@ -72,12 +91,14 @@ FORMS    += mainwindow.ui \
     logindialog.ui \
     system.ui \
     sensor_edit.ui \
-    obis_edit.ui
+    obis_edit.ui \
+    rulechainedit.ui \
+    asdialog.ui
 
 RESOURCES += \
     master.qrc
 
 RC_ICONS += logo.ico
 
-target.path = D:\qt_work
+target.path = E:\qtWoMasterUtility\TestBuild
 INSTALLS += target

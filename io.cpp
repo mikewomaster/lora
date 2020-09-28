@@ -15,13 +15,16 @@ void MainWindow::on_currentOutputPushButton_clicked()
      quint16 channel = ui->currentOutputComboBox->currentText().toInt();
      quint16 ADDR = currentOutputAddr + channel;
      QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, IOEntries);
-
-     //quint16 currentOutputValue = ui->currentOutputLineEdit->text().toDouble() * 1000;
-     float temp =  ui->currentOutputLineEdit->text().toFloat();
-     uint currentOutputValue = temp * 1000;
+     double temp =  ui->currentOutputLineEdit->text().toDouble();
+     double currentOutputValue = temp * 1000;
 
      if (currentOutputValue < 4000) {
          statusBar()->showMessage("Set Current Error: current output must bigger than 4mA");
+         return;
+      }
+
+     if (currentOutputValue > 20000) {
+         statusBar()->showMessage("Set Current Error: current output must less than 20mA");
          return;
       }
 
@@ -39,7 +42,7 @@ void MainWindow::on_voltageOutputPushButton_clicked()
     quint16 ADDR = voltageOutputAddr + channel;
     QModbusDataUnit writeUnit = QModbusDataUnit(QModbusDataUnit::HoldingRegisters, ADDR, IOEntries);
     quint16 voltageOutputValue = ui->voltageOutputLineEdit->text().toDouble();
-    if (voltageOutputValue > 30000) {
+    if (voltageOutputValue > 10000) {
         statusBar()->showMessage("Set Voltage Error: voltage output must less than 10000mv");
         return;
     }
@@ -68,10 +71,6 @@ void MainWindow::on_PWMOutputPushButton_clicked()
         statusBar()->showMessage("Set Occupu Error: occupy output must less than 100%");
         return;
     }
-
-    // occupy 3 bytes for fre.
-    // quint16 valueOne = (fre >> 8);
-    // quint16 valuetwo = ((fre & 0x000000ff) << 8) + ocu;
 
     quint16 valueOne = fre;
     quint16 valuetwo = ocu;
